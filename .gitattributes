@@ -1,0 +1,4 @@
+*.C            text eol=CRLF working-tree-encoding=IBM437
+*.H            text eol=CRLF working-tree-encoding=IBM437
+*.BAT          text eol=CRLF working-tree-encoding=IBM437
+*.CFG          text eol=CRLF working-tree-encoding=IBM437
