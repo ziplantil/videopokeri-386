@@ -70,12 +70,12 @@ static int present_panos;
 #define PYSAYTA_AANET() (musan_toisto = 0, pysayta_aanet())
 
 struct Pelikortti pelikortit[6] = { 
-    { PAKKA_X, PAKKA_Y, 0, 1, 1, 0 }, /* selk∩┐╜puoli */
-    { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }, /* kortti 1, tyhj∩┐╜ */
-    { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }, /* kortti 2, tyhj∩┐╜ */
-    { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }, /* kortti 3, tyhj∩┐╜ */
-    { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }, /* kortti 4, tyhj∩┐╜ */
-    { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }  /* kortti 5, tyhj∩┐╜ */
+    { PAKKA_X, PAKKA_Y, 0, 1, 1, 0 }, /* selkäpuoli */
+    { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }, /* kortti 1, tyhjä */
+    { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }, /* kortti 2, tyhjä */
+    { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }, /* kortti 3, tyhjä */
+    { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }, /* kortti 4, tyhjä */
+    { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }  /* kortti 5, tyhjä */
 };
 struct Pelikortti pelikortit_v[6];
 unsigned char *kortti_caches[6] = { 0 };
@@ -114,7 +114,7 @@ static const char *tuplaus_onnittelut[] = {
     "USKOMATONTA",
     "MESTARITUPLAUS",
     "ONNEKAS ARVAUS",
-    "KYLM∩┐╜T HERMOT",
+    "KYLMÄT HERMOT",
     "LUOVUTAN"
 };
 static const char *tuplaus_onnittelut_e[] = {
@@ -256,7 +256,7 @@ void aanitesti(void) {
             printf("Secret sound test. Enter 1 - %d or 0 to quit\n",
                     AANI_AANTEN_LOPPU);
         else
-            printf("∩┐╜∩┐╜nitesti. Sy∩┐╜t∩┐╜ numero 1 - %d, tai 0 lopettaa\n",
+            printf("Äänitesti. Syötä numero 1 - %d, tai 0 lopettaa\n",
                     AANI_AANTEN_LOPPU);
         n = scanf("%u", &kappale);
         if (n <= 0)
@@ -1236,7 +1236,7 @@ void alusta_tila(enum Pelitila t) {
         piirra_teksti_oikea(GAREA_WIDTH - 16, GAREA_HEIGHT - 32,
             15, 1, "ORIGINAL 1986 RAY", 0);
         piirra_teksti_oikea(GAREA_WIDTH - 16, GAREA_HEIGHT - 16,
-            15, 1, "DOS 2021 RISTIJ∩┐╜TK∩┐╜", 0);
+            15, 1, "DOS 2021 RISTIJÄTKÄ", 0);
         for (y = 0; y < 12; ++y) {
             for (x = 0; x < 36; ++x) {
                 if (*p++ != ' ')
@@ -1324,7 +1324,7 @@ void aja_peli_internal(void) {
         }
         break;
     }
-    case T_JAKO1: /* ker∩┐╜∩┐╜ kortit */
+    case T_JAKO1: /* kerää kortit */
         keraa_kortit(T_JAKO2);
         break;
     case T_JAKO2: /* sekoita */
@@ -1333,7 +1333,7 @@ void aja_peli_internal(void) {
     case T_JAKO3: /* jaa kortit */
         jaa_kortit();
         break;
-    case T_TUPLA1: /* ker∩┐╜∩┐╜ kortit */
+    case T_TUPLA1: /* kerää kortit */
         keraa_kortit(T_TUPLA2);
         break;
     case T_TUPLA2: /* panos tuplataan */
@@ -1396,7 +1396,7 @@ void aja_peli_internal(void) {
     case T_UJAKO2: /* jaa uudet */
         jaa_uudet_kortit();
         break;
-    case T_UJAKO3: { /* tinnitys j∩┐╜∩┐╜vistyy */
+    case T_UJAKO3: { /* tinnitys jäävistyy */
         int a = anim / 2, y = pelikortit[0].y;
         static div_t ufrac_div;
         ufrac += a * a + (anim >= 120 ? (anim - 120) << 7 : 1);
@@ -1413,7 +1413,7 @@ void aja_peli_internal(void) {
                 sailotty_miny = 0;
                 sailotty_kortti = 0;
                 sailotty_maxy = CARDAREA_HEIGHT;
-                if (tickskip > 2) /* ∩┐╜l∩┐╜ ved∩┐╜ UJAKO4:sta hitailla koneilla */
+                if (tickskip > 2) /* älä vedä UJAKO4:sta hitailla koneilla */
                     arvioi_kasi();
                 else
                     alusta_tila(T_UJAKO4);
@@ -1421,7 +1421,7 @@ void aja_peli_internal(void) {
         }
         break;
     }
-    case T_UJAKO4: { /* pakka lent∩┐╜∩┐╜ */
+    case T_UJAKO4: { /* pakka lentää */
         int x = pelikortit[0].x, y = pelikortit[0].y;
         if (ANIM_LE(8)) {
             pelikortit[0].nakyva = 1;
