@@ -1,0 +1,46 @@
+
+Videopokeri-386 on MS-DOS-pelin muodossa tehty uudelleenluomus RAY:n
+klassisesta 100/200 markan Videopokeri-pelikoneesta. Pelissä on kaikki
+olennaiset omaisuudet, kuten viiden kortin kädet, voitot sekä tuplaus.
+Tälläpäs kertaa ei tarvitse käyttää oikeita markkoja, vaan sen kun
+kirjoittaa isomman summan alkuruutuun.
+
+Peliä voi pelata MS-DOS-tietokoneilla joissa on vähintään i386-suoritin,
+riittävä määrä muistia (yksikään mega) sekä VGA-yhteensopiva näyttökortti.
+Äänikortteja tuetaan useampia, mukaan lukien pelkkä PC:n oma piippikaiutin,
+Ad Lib, Sound Blaster ja muita, mutta ääniä ei tarvitse pelin pelaamiseen.
+Parhaimman pelattavuuden saa 486/Pentium-koneilla.
+
+Pelin voi myös kääntää itse Watcomin C-kääntäjällä (mukaan lukien Open Watcom).
+Julkaisuversion EXE on käännetty Open Watcomilla ja PMODE/W:llä.
+
+Peliä pelataan Q/W/E/R/T ja A/S/D/F/G/H -näppäimillä, jotka ovat samassa
+asettelussa kuin ruudun alareunassa näkyvät napit. Pelistä poistutaan joko
+Escillä tai Backspacella/askelpalauttimella (tai pelaamalla rahat loppuun).
+
+Pelin asetuksia voi säätää POKERI.CFG-tiedostosta, jonka on oltava samassa
+kansiossa kuin POKERI.EXE. Muita tiedostoja ei pelin suorittamiseen kaivata
+(teknisesti edes CFG-tiedostoa, mutta silloin asetukset pitää määrittää kaikki
+itse).
+
+Asetukset säätävät mm. pelikoneen mallin (100 mk/200 mk päävoitot). Muuten
+säännöt perustuvat oikeisiin koneisiin; tuplauksessa voittaa aina jokerilla
+ja häviää aina seiskalla. Panokset vaihtelevat 1-5 mk välillä ja jokeri voi
+tulla vain jos panos on 3 mk tai yli.
+
+Pelin grafiikat ja äänimaailma pyrkivät täsmäämään oikeisiin koneisiin
+mahdollisimman tarkasti.
+
+================================================================================
+
+Videopokeri-386 is a DOS recreation of the classic Videopokeri video poker
+machines by the Finnish state gambling association RAY. It requires a 386 CPU,
+reasonable amount of RAM (at least 1 MB) and a VGA compatible graphics card.
+Sound card support is available for PC speaker, Ad Lib, Sound Blaster, etc.
+A 486 or Pentium is recommended.
+The game can be compiled with Watcom's C compiler (also with Open Watcom).
+The .EXE provided is compiled with Open Watcom and PMODE/W.
+The configuration for the game happens through POKERI.CFG, which must be
+located in the same directory as POKERI.EXE.
+The game is played with the Q/W/E/R/T A/S/D/F/G/H keys (bottom row of buttons)
+and Esc/Backspace can be used to exit.
