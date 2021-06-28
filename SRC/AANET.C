@@ -9,10 +9,10 @@
 
 #define AANIKOMENTO(k, x) (((k) << 8) | (x))
 
-// yksikk” tempolla 120 = 1/960 sek. maksimiviive: 32767 (120 bpm: yli 34 sek)
+// yksikkÃ¶ tempolla 120 = 1/960 sek. maksimiviive: 32767 (120 bpm: yli 34 sek)
 //    ts. kokonuotti (yksi tahti) = 480
 #define VIIVE(n) n
-// „l„ tee mit„„n. jos tarvitsee pitki„ viiveit„, t„m„ on k„tev„
+// Ã¤lÃ¤ tee mitÃ¤Ã¤n. jos tarvitsee pitkiÃ¤ viiveitÃ¤, tÃ¤mÃ¤ on kÃ¤tevÃ¤
 #define ODOTA(v) VIIVE(v), AANIKOMENTO(COMMAND_NOOP, 0)
 // n = 1-127, C#-0...G-10, C-4 = 48
 #define PAALLE(v, n) VIIVE(v), AANIKOMENTO(COMMAND_NOTE_ON, (n & 0x7F))
@@ -20,9 +20,9 @@
 #define POIS(v) VIIVE(v), AANIKOMENTO(COMMAND_NOTE_OFF, 0)
 // soittimen vaihto. n = 0-127
 #define SOITIN(v, n) VIIVE(v), AANIKOMENTO(COMMAND_INSTRUMENT, (n & 0x7F))
-// kaikki kanavat takaisin alkuun. pist„ ekalle kanavalle
+// kaikki kanavat takaisin alkuun. pistÃ¤ ekalle kanavalle
 #define ALKUUN(v) VIIVE(v), AANIKOMENTO(COMMAND_RESTART, 0)
-// lopeta t„m„ kanava
+// lopeta tÃ¤mÃ¤ kanava
 #define LOPPU(v) VIIVE(v), AANIKOMENTO(COMMAND_END, 0)
 
 #define NC_(o) ( 0 + (o) * 12)
@@ -62,21 +62,21 @@
         6:      panosnuotti
         7:      rumpu0              (voitto)
         8:      rumpu1              (voitto)
-        9:      tuplaus h„vitty #1
+        9:      tuplaus hÃ¤vitty #1
         10:     sekoitus
         11:     liuku
         12:     korttien pudotus
         13:     kortti asettuu
-        14:     kortti k„„ntyy
+        14:     kortti kÃ¤Ã¤ntyy
         15:     valinta
         16:     maksu
         17:     rumpu2              (tuplaus)
-        18:     tuplaus h„vitty #2
-        19:     kantti3             (p„„voitto)
-        20:     pim                 (p„„voitto)
-        21:     rumpu3              (p„„voitto)
-        22:     tiuku               (p„„voitto)
-        23:     rumpu4              (p„„voitto)
+        18:     tuplaus hÃ¤vitty #2
+        19:     kantti3             (pÃ¤Ã¤voitto)
+        20:     pim                 (pÃ¤Ã¤voitto)
+        21:     rumpu3              (pÃ¤Ã¤voitto)
+        22:     tiuku               (pÃ¤Ã¤voitto)
+        23:     rumpu4              (pÃ¤Ã¤voitto)
     ***/
 
 const unsigned short *A_tyhja[] = { KANAVAT_LOPPU };
@@ -426,7 +426,13 @@ const unsigned short A_Mkoputus0[] = {
     SOITIN(0, 3),
     PAALLE(  0, NG_(0)), POIS( 60),
     PAALLE( 75, NA_(0)), POIS( 60),
-    ALKUUN(285),
+    PAALLE(285, NG_(0)), POIS( 60),
+    PAALLE( 75, NA_(0)), POIS( 60),
+    PAALLE(285, NG_(0)), POIS( 60),
+    PAALLE( 75, NA_(0)), POIS( 60),
+    PAALLE(285, NG_(0)), POIS( 60),
+    PAALLE( 75, NA_(0)), POIS( 60),
+    LOPPU(285)
 };
 AANI_KANAVIA_1(A_Mkoputus);
 

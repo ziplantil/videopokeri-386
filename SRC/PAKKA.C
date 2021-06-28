@@ -1,5 +1,6 @@
 
 #include <stdlib.h>
+#include <time.h>
 #include "POKERI.H"
 #include "PAKKA.H"
 
@@ -30,6 +31,7 @@ void alusta_sekoitin(void) {
     u = (u << 11) | (u >> 21);
     u ^= *(const volatile unsigned long*)0x41e;
     u = (u << 29) | (u >> 3);
+    u ^= clock();
     custom_srand(u);
 }
 

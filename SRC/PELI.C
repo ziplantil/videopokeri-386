@@ -716,7 +716,7 @@ void piirra_alapalkki_voitto(char paivita) {
         if (english)
             piirra_teksti_oikea(160, y + 10, 11, 0, "YOU WON", 0);
         else
-            piirra_teksti(160, y + 10, 11, 0, "PANOS", 0);
+            piirra_teksti(160, y + 10, 11, 0, "VOITIT", 0);
         piirra_teksti(424, y + 10, 11, 0,
                     english ? "WANT TO DOUBLE?" : "TUPLAATKO", 0);
         piirra_kuva_maski(256, y + 8, 8, 16, G_tulosv, G_tulosv_M);
@@ -1185,7 +1185,13 @@ void alusta_tila(enum Pelitila t) {
         VALO_VILKKU(valot.tuplaus_suuri, 2);
         VALO_VILKKU_ALUSTA();
         paivita_palkki();
-        toista_musiikki(MUSA_TUPLAUS, 120 + tuplaus_ctr * 24);
+        /* toista_musiikki(MUSA_TUPLAUS, 120 + tuplaus_ctr * 24); */
+        {
+            int vj = voitto, vk = 0;
+            while (vj * 2 <= paavoitto && vk < 5)
+                vj *= 2, ++vk;
+            toista_musiikki(MUSA_TUPLAUS, 240 - vk * 24);
+        }
     } break;
     case T_TUPLAUS:
         card0zoom = 0;
@@ -1203,7 +1209,9 @@ void alusta_tila(enum Pelitila t) {
         paivita_palkki();
         paivita_alapalkki();
         ++tuplaus_ctr;
-        toista_musiikki(MUSA_VOITTO, 96 + tuplaus_ctr * 24);
+        /* toista_musiikki(MUSA_VOITTO, 96 + tuplaus_ctr * 24); */
+        toista_musiikki_oletus(MUSA_KOPUTUS);
+        musan_toisto = 0;
     } break;
     case T_TUPLAEI: {
         toista_musiikki_oletus(AANI_TUPLAUS_HAVITTY);
@@ -1331,6 +1339,7 @@ void aja_peli_internal(void) {
         if (inactive >= 1800) {
             kaikki_valot_pois();
             valot_efekti();
+            piirra_palkki_napit();
             alusta_tila(T_ESIT0);
         }
         break;
@@ -1501,6 +1510,10 @@ void aja_peli_internal(void) {
             paivita_palkki();
             PYSAYTA_AANET();
             alusta_tila(T_TUPLA1);
+        }
+        if (!toistaa_aanta() && !musan_toisto) {
+            musan_toisto = 1;
+            toista_musiikki(MUSA_VOITTO, 96 + tuplaus_ctr * 24);
         }
         break;
     }

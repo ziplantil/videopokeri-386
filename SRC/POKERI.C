@@ -14,7 +14,7 @@
 #include "VALOT.H"
 
 static const char *VERSION =
-    "VIDEOPOKERI-DOS 386 RISTIJÄTKÄ 2021 v1.4 2021-06-28";
+    "VIDEOPOKERI-DOS 386 RISTIJÄTKÄ 2021 v1.5 2021-06-28";
 
 static short frameskip_i = 0;
 static int soundtest = 0;

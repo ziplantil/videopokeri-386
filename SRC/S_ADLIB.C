@@ -155,8 +155,8 @@ void soitto_komento_adlib(short *c, short hwc,
             assert(ch < 6);
             adlib_turn_note_on(ch, o, n);
             if (instruments[hwc] == 9 || instruments[hwc] == 18) {
-                adlib_turn_note_on(++ch, o + 1, n);
-                adlib_turn_note_on(++ch, o + 2, n);
+                adlib_turn_note_on(++ch, o + 1, n + 1);
+                adlib_turn_note_on(++ch, o + 2, n + 2);
             }
         }
         break;
@@ -179,6 +179,7 @@ void soitto_komento_adlib(short *c, short hwc,
         if (x < instruments_cnt) {
             const unsigned char *p = _bnk + x * INSTR_SIZE;
             unsigned char t, l, h;
+            int i = (x == 9 || x == 18) ? 3 : 1;
             t = *p++;
             if (t) {
                 *c = ch = 8 + (*p & 7);
@@ -186,21 +187,25 @@ void soitto_komento_adlib(short *c, short hwc,
                 *c = ch = hwc; /* oletuskanavan palautus */
             }
             instruments[hwc] = x;
-            l = OPL2_LO[ch], h = OPL2_HI[ch];
-            ++p;
-            t = *p++; ADLIB_WRITE(0xc0 | ch, t);
-            t = *p++; ADLIB_WRITE(0xe0 | l, t);
-            t = *p++; ADLIB_WRITE(0x20 | l, t);
-            t = *p++; ADLIB_WRITE(0x40 | l, t);
-            t = *p++; ADLIB_WRITE(0x60 | l, t);
-            t = *p++; ADLIB_WRITE(0x80 | l, t);
 
-            transpose[ch] = (signed char)(*p++);
-            t = *p++; ADLIB_WRITE(0xe0 | h, t);
-            t = *p++; ADLIB_WRITE(0x20 | h, t);
-            t = *p++; ADLIB_WRITE(0x40 | h, t);
-            t = *p++; ADLIB_WRITE(0x60 | h, t);
-            t = *p++; ADLIB_WRITE(0x80 | h, t);
+            while (i--) {
+                l = OPL2_LO[ch], h = OPL2_HI[ch];
+                ++p;
+                t = *p++; ADLIB_WRITE(0xc0 | ch, t);
+                t = *p++; ADLIB_WRITE(0xe0 | l, t);
+                t = *p++; ADLIB_WRITE(0x20 | l, t);
+                t = *p++; ADLIB_WRITE(0x40 | l, t);
+                t = *p++; ADLIB_WRITE(0x60 | l, t);
+                t = *p++; ADLIB_WRITE(0x80 | l, t);
+
+                transpose[ch] = (signed char)(*p++);
+                t = *p++; ADLIB_WRITE(0xe0 | h, t);
+                t = *p++; ADLIB_WRITE(0x20 | h, t);
+                t = *p++; ADLIB_WRITE(0x40 | h, t);
+                t = *p++; ADLIB_WRITE(0x60 | h, t);
+                t = *p++; ADLIB_WRITE(0x80 | h, t);
+                ++ch;
+            }
 
             pseudonoise_c = 709;
         }
@@ -293,8 +298,8 @@ static const unsigned char _bnk[] = {
     0x00, 0x00, 0x0a, 0x00, 0x0c, 0x00, 0xf6, 0x08,
                   48, 0x02, 0x12, 0x05, 0x7b, 0x47,
 /*  9 */
-    0x00, 0x00, 0x08, 0x01, 0xca, 0x06, 0xf6, 0xf0,
-              N(-12), 0x03, 0xc0, 0x00, 0xf6, 0xe6,
+    0x00, 0x00, 0x0c, 0x02, 0x0d, 0x80, 0xf0, 0xf0,
+              N(-50), 0x02, 0x0b, 0x80, 0xf5, 0xe6,
 /* 10 */
     0x00, 0x00, 0x0e, 0x00, 0xee, 0x00, 0xf0, 0x00,
                   60, 0x03, 0xe0, 0x08, 0x75, 0x05,
@@ -320,8 +325,8 @@ static const unsigned char _bnk[] = {
     0x00, 0x00, 0x0e, 0x02, 0x00, 0x00, 0xfc, 0x05,
                   48, 0x00, 0x00, 0x00, 0xfa, 0x17,
 /* 18 */
-    0x00, 0x00, 0x08, 0x01, 0xca, 0x06, 0xf6, 0xf0,
-              N(-12), 0x03, 0xc0, 0x00, 0xf6, 0xe6,
+    0x00, 0x00, 0x0c, 0x02, 0x0d, 0x80, 0xf0, 0xf0,
+              N(-50), 0x02, 0x0b, 0x80, 0xf5, 0xe6,
 /* 19 */
     0x00, 0x00, 0x00, 0x02, 0x22, 0x60, 0x90, 0x56,
                   12, 0x00, 0x31, 0x00, 0xb0, 0x25,
