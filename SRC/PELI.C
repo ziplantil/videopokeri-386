@@ -254,10 +254,10 @@ void aanitesti(void) {
     for (;;) {
         if (english)
             printf("Secret sound test. Enter 1 - %d or 0 to quit\n",
-                    AANI_AANTEN_LOPPU);
+                    AANI_AANTEN_LOPPU - 1);
         else
             printf("Äänitesti. Syötä numero 1 - %d, tai 0 lopettaa\n",
-                    AANI_AANTEN_LOPPU);
+                    AANI_AANTEN_LOPPU - 1);
         n = scanf("%u", &kappale);
         if (n <= 0)
             return;
@@ -514,13 +514,13 @@ void update_voitto_speed(int offset, char slow) {
     offset *= tickskip + 1;
     if (slow) offset >>= 2;
     if (offset > 400)
-        voitto_speed = 8, voitto_speed_mul = 4;
+        voitto_speed = 2, voitto_speed_mul = 32;
     else if (offset > 200)
-        voitto_speed = 4, voitto_speed_mul = 4;
+        voitto_speed = 2, voitto_speed_mul = 16;
     else if (offset > 100)
-        voitto_speed = 2, voitto_speed_mul = 4;
+        voitto_speed = 2, voitto_speed_mul = 8;
     else if (offset > 50)
-        voitto_speed = 2, voitto_speed_mul = 2;
+        voitto_speed = 2, voitto_speed_mul = 4;
     else if (offset > 25)
         voitto_speed = 2, voitto_speed_mul = 1;
     else if (offset > 15)
@@ -998,7 +998,8 @@ void esittely2(void) {
                     piirra_teksti(x, y, 14,
                         i == present_hand, kadet[i].nimi, 0);
                     piirra_teksti_oikea(x + 400, y, 14, 0, "@", 0);
-                    kerroin = (present_panos >= jokeri_minimipanos
+                    kerroin = (jokeri_saatavilla &&
+                                present_panos >= jokeri_minimipanos
                                 ? kadet[i].kerroin_jokeri 
                                 : kadet[i].kerroin);
                     if (kerroin)
@@ -1034,8 +1035,18 @@ void alusta_tila(enum Pelitila t) {
             alusta_tila(T_KONKKA);
             toista_musiikki_oletus(MUSA_KONKKA);
             return;
-        } else if (panos > pelit + voitot)
+        } else if (panos > pelit + voitot) {
             panos = pelit + voitot;
+            paivita_ylapalkki();
+        }
+        else if (pelit + voitot > 99999999) {
+            if (english)
+                debug_abort("We've called security. "
+                            "Card counters aren't welcome here.");
+            else
+                debug_abort("Olemme soittaneet vartijat paikalle.\n"
+                            "Kortinlaskijoita ei täällä suvaita.");
+        }
         VALO_VILKKU(valot.jako, 1);
         VALO_VILKKU_ALUSTA();
         paivita_palkki();
@@ -1299,8 +1310,8 @@ void aja_peli_internal(void) {
             panos = (panos % maksimipanos) + 1;
             if (panos > pelit + voitot)
                 panos = 1;
-            toista_aani(AANI_PANOS1 + (panos - 1));
-            jokeri = panos >= jokeri_minimipanos;
+            toista_aani(AANI_PANOS1 + ((panos - 1) % 5));
+            jokeri = jokeri_saatavilla && panos >= jokeri_minimipanos;
             paivita_ylapalkki();
             piirra_kadet(0);
             VALO_VILKKU(valot.jako, 1);
@@ -1466,8 +1477,7 @@ void aja_peli_internal(void) {
             paivita_palkki();
             PYSAYTA_AANET();
             alusta_tila(T_TUPLA1);
-        }
-        if (voitto_disp < voitto && (anim % voitto_speed) <= tickskip) {
+        } else if (voitto_disp < voitto && (anim % voitto_speed) <= tickskip) {
             voitto_disp += voitto_speed_mul;
             if (voitto_disp > voitto)
                 voitto_disp = voitto;

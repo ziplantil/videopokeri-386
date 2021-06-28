@@ -14,7 +14,7 @@
 #include "VALOT.H"
 
 static const char *VERSION =
-    "VIDEOPOKERI-DOS 386 RISTIJŽTKŽ 2021 v1.0.1 2021-03-15";
+    "VIDEOPOKERI-DOS 386 RISTIJÃ„TKÃ„ 2021 v1.4 2021-06-28";
 
 static short frameskip_i = 0;
 static int soundtest = 0;
@@ -101,6 +101,12 @@ int kertoimet_100b_J[] = { 20, 20, 15, 10, 5, 4, 2, 2 };
 int kertoimet_200_N[] = { 0, 30, 15, 10, 5, 4, 3, 3 };
 int kertoimet_200_J[] = { 40, 30, 15, 10, 5, 4, 2, 2 };
 
+int kertoimet_1000b_N[] = { 0, 200, 20, 10, 5, 4, 3, 3 };
+int kertoimet_1000b_J[] = { 0, 200, 20, 10, 5, 4, 3, 3 };
+
+int kertoimet_1000j_N[] = { 0, 30, 15, 10, 5, 4, 3, 3 };
+int kertoimet_1000j_J[] = { 40, 30, 15, 10, 5, 4, 2, 2 };
+
 #define KERTOIMET(n, j) do {                    \
         int i;                                  \
         for (i = 0; i < KASI_LKM; ++i)          \
@@ -149,7 +155,7 @@ int lue_asetus(const char *nimi, const char *arvo) {
                 printf("Config error: unrecognized audio device: '%s'\n", arvo);
                 puts("Allowed:      - pc tandy adlib sb cms innova mpu mt32");
             } else {
-                printf("M„„rittelyvirhe: tuntematon „„nilaite: '%s'\n", arvo);
+                printf("MÃ¤Ã¤rittelyvirhe: tuntematon Ã¤Ã¤nilaite: '%s'\n", arvo);
                 puts("Sallitut:     - pc tandy adlib sb cms innova mpu mt32");
             }
             return 1;
@@ -168,7 +174,7 @@ int lue_asetus(const char *nimi, const char *arvo) {
             if (english) {
                 printf("Config error: invalid IRQ setting: '%s'\n", arvo);
             } else {
-                printf("M„„rittelyvirhe: virheellinen IRQ-arvo: '%s'\n", arvo);
+                printf("MÃ¤Ã¤rittelyvirhe: virheellinen IRQ-arvo: '%s'\n", arvo);
             }
             return 1;
         }
@@ -178,7 +184,7 @@ int lue_asetus(const char *nimi, const char *arvo) {
             if (english) {
                 printf("Config error: invalid DMA setting: '%s'\n", arvo);
             } else {
-                printf("M„„rittelyvirhe: virheellinen DMA-arvo: '%s'\n", arvo);
+                printf("MÃ¤Ã¤rittelyvirhe: virheellinen DMA-arvo: '%s'\n", arvo);
             }
             return 1;
         }
@@ -192,25 +198,40 @@ int lue_asetus(const char *nimi, const char *arvo) {
         if (!*arvo || !strcmp(arvo, "100a")) {
             maksimipanos = 5;
             paavoitto = 100;
+            jokeri_saatavilla = 1;
             jokeri_minimipanos = 3;
             KERTOIMET(kertoimet_100a_N, kertoimet_100a_J);
         } else if (!strcmp(arvo, "100b")) {
             maksimipanos = 5;
             paavoitto = 100;
+            jokeri_saatavilla = 1;
             jokeri_minimipanos = 3;
             KERTOIMET(kertoimet_100b_N, kertoimet_100b_J);
         } else if (!strcmp(arvo, "200")) {
             maksimipanos = 5;
             paavoitto = 200;
+            jokeri_saatavilla = 1;
             jokeri_minimipanos = 3;
+            KERTOIMET(kertoimet_200_N, kertoimet_200_J);
+        } else if (!strcmp(arvo, "1000b")) {
+            maksimipanos = 5;
+            paavoitto = 1000;
+            jokeri_saatavilla = 0;
+            jokeri_minimipanos = 100;
+            KERTOIMET(kertoimet_1000b_N, kertoimet_1000b_J);
+        } else if (!strcmp(arvo, "1000j")) {
+            maksimipanos = 20;
+            paavoitto = 1000;
+            jokeri_saatavilla = 1;
+            jokeri_minimipanos = 8;
             KERTOIMET(kertoimet_200_N, kertoimet_200_J);
         } else {
             if (english) {
                 printf("Config error: unrecognized model: '%s'\n", arvo);
-                puts("Allowed:      100a 100b 200");
+                puts("Allowed:      100a 100b 200a 1000b 1000j");
             } else {
-                printf("M„„rittelyvirhe: tuntematon malli: '%s'\n", arvo);
-                puts("Sallitut:     100a 100b 200");
+                printf("MÃ¤Ã¤rittelyvirhe: tuntematon malli: '%s'\n", arvo);
+                puts("Sallitut:     100a 100b 200a 1000b 1000j");
             }
             return 1;
         }
@@ -224,7 +245,7 @@ int lue_asetus(const char *nimi, const char *arvo) {
                     printf("Config error: invalid skip setting: '%d'\n",
                                 configured_skip);
                 } else {
-                    printf("M„„rittelyvirhe: virheellinen skip-arvo: '%d'\n",
+                    printf("MÃ¤Ã¤rittelyvirhe: virheellinen skip-arvo: '%d'\n",
                                 configured_skip);
                 }
                 return 1;
@@ -314,7 +335,7 @@ void print_fix(int f) {
 void intro(void) {
     puts("\n"
          "======================================\n"
-         " VIDEOPOKERI-DOS -by- RISTIJŽTKŽ 2021 \n"
+         " VIDEOPOKERI-DOS -by- RISTIJÃ„TKÃ„ 2021 \n"
          "======================================\n");
 }
 
@@ -341,7 +362,7 @@ int main(int argc, char *argv[]) {
                         (sz + 999) / 1000);
         } else {
             printf("Tietokoneessa ei ole tarpeeksi vapaata muistia.\n");
-            printf("Muistia pit„„ olla vapaata v„hint„„n %d kt.\n",
+            printf("Muistia pitÃ¤Ã¤ olla vapaata vÃ¤hintÃ¤Ã¤n %d kt.\n",
                         (sz + 999) / 1000);
         }
         return EXIT_FAILURE;
@@ -353,8 +374,8 @@ int main(int argc, char *argv[]) {
             printf("Could not switch to a VGA screen mode, make sure\n"
                 "that a VGA compatible graphics card is installed.\n");
         } else {
-            printf("Ei voitu vaihtaa VGA-tilaan. Varmista, ett„\n"
-                "tietokoneessa on VGA-yhteensopiva n„ytt”kortti.\n");
+            printf("Ei voitu vaihtaa VGA-tilaan. Varmista, ettÃ¤\n"
+                "tietokoneessa on VGA-yhteensopiva nÃ¤yttÃ¶kortti.\n");
         }
         return EXIT_FAILURE;
     }
@@ -381,19 +402,19 @@ int main(int argc, char *argv[]) {
         printf("Main buffer allocated memory: %lu bytes\n", sz);
         printf("Sound device: %s\n", soittolaitteen_nimi(soittolaite));
     } else {
-        puts("Muista, pelist„ p„„see pois Escill„ tai askelpalauttimella!\n");
+        puts("Muista, pelistÃ¤ pÃ¤Ã¤see pois EscillÃ¤ tai askelpalauttimella!\n");
         printf("Pelin nopeus: ");
         print_fix(600 / (tickskip + 1));
         printf(" ruutua sekunnissa\n");
-        printf("P„„puskurin muistinvarauksen koko %lu tavua\n", sz);
-        printf("Ž„nilaite: %s\n", soittolaitteen_nimi(soittolaite));
+        printf("PÃ¤Ã¤puskurin muistinvarauksen koko %lu tavua\n", sz);
+        printf("Ã„Ã¤nilaite: %s\n", soittolaitteen_nimi(soittolaite));
     }
     aani_ok = !alusta_soitto();
     if (!aani_ok) {
         if (english) {
             puts("Failed to enable audio, the game will be silent");
         } else {
-            puts("Ž„nen k„ytt””notto ep„onnistui, peli hiljenee");
+            puts("Ã„Ã¤nen kÃ¤yttÃ¶Ã¶notto epÃ¤onnistui, peli hiljenee");
         }
     }
     if (soundtest) {
@@ -401,7 +422,7 @@ int main(int argc, char *argv[]) {
             if (english) {
                 puts("No sound available");
             } else {
-                puts("Ei „„nt„");
+                puts("Ei Ã¤Ã¤ntÃ¤");
             }
             return EXIT_FAILURE;
         }
@@ -414,13 +435,24 @@ int main(int argc, char *argv[]) {
     n = 1, saldo = 50;
 #else
     do {
+        char of[11];
         if (english) {
             puts("How many marks will you gamble today? ");
         } else {
-            puts("Montako markkaa t„n„„n uhkapelaat? ");
+            puts("Montako markkaa tÃ¤nÃ¤Ã¤n uhkapelaat? ");
         }
-        n = scanf("%u", &saldo);
+        n = scanf("%10s", of);
+        n &= sscanf(of, "%9u", &saldo);
         clearstdin();
+        if (n && (saldo > 1000000 || strlen(of) > 9)) {
+            if (english) {
+                puts("Come on. Nobody has that much money.");
+                puts("If you did, you wouldn't be playing this.");
+            } else {
+                puts("Ã„lÃ¤ puhu paskaa");
+            }
+            saldo = -1;
+        }
     } while (!n || saldo < 0);
 #endif
 
@@ -454,12 +486,12 @@ int main(int argc, char *argv[]) {
                 else if (pelit < saldo)
                     printf("Teit %u mk tappiota...\n", saldo - pelit);
                 else
-                    puts("Erotus on py”re„ nolla.");
+                    puts("Erotus on pyÃ¶reÃ¤ nolla.");
             }
         } else
             puts(english ? "Something went wrong" : "Jokin meni pieleen");
     } else
-        puts(english ? "So be it." : "Hyv„ on.");
+        puts(english ? "So be it." : "HyvÃ¤ on.");
     
     puts(english ? "Back to DOS...\n" : "Palataan DOSiin.\n");
     return EXIT_SUCCESS;

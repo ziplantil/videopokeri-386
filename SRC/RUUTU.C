@@ -183,7 +183,9 @@ void piirra_kadet(char hohda_aina) {
     piilota_kadet_();
     if (!hohda && voitto_kasi >= 0)
         piirra_suorakulmio(240, y + 12 * voitto_kasi, 352, 12, 2);
-    for (i = 0; i < KASI_LKM; ++i) {
+    if (!jokeri_saatavilla)
+        y += 12;
+    for (i = jokeri_saatavilla ? 0 : 1; i < KASI_LKM; ++i) {
         vari = (hohda && voitto_kasi == i) ? 4 : 14;
         kerroin = jokeri ? kadet[i].kerroin_jokeri : kadet[i].kerroin;
         piirra_teksti(240, y, vari, 0, kadet[i].nimi, 0);

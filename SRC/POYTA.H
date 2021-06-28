@@ -6,6 +6,7 @@
 
 extern int maksimipanos;
 extern int paavoitto;
+extern int jokeri_saatavilla;
 extern int jokeri_minimipanos;
 
 struct Pokerikasi {

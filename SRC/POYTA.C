@@ -8,6 +8,7 @@
 
 int maksimipanos = 5;
 int paavoitto = 100;
+int jokeri_saatavilla = 1;
 int jokeri_minimipanos = 3;
 
 /* nimi, kerroin ilman jokeria, kerroin jos jokeri */
@@ -68,7 +69,7 @@ int arvioi_voitto_kasi(void) {
         vari &= poyta[i] == K_JOKERI ? vari : 1 << KMAA(poyta[i]);
         ++arvot[KARVO(poyta[i])];
     }
-    jokeri = arvot[15];
+    jokeri = jokeri_saatavilla && arvot[15];
     arvot[ARVOT_N] = arvot[0];
     for (i = 0; i < ARVOT_N; ++i) {
         ++arvot_m[arvot[i]];
