@@ -1,4 +1,6 @@
 
+#include <string.h>
+
 #include "POKERI.H"
 #include "POYTA.H"
 #include "KORTTI.H"
@@ -11,10 +13,10 @@ int jokeri_minimipanos = 3;
 /* nimi, kerroin ilman jokeria, kerroin jos jokeri */
 struct Pokerikasi kadet[KASI_LKM] = {
     { "VIITOSET",       0, 20 },
-    { "VŽRISUORA",     20, 20 },
+    { "VÃ„RISUORA",     20, 20 },
     { "NELOSET",       15, 15 },
-    { "TŽYSKŽSI",      10, 10 },
-    { "VŽRI",           5,  5 },
+    { "TÃ„YSKÃ„SI",      10, 10 },
+    { "VÃ„RI",           5,  5 },
     { "SUORA",          4,  4 },
     { "KOLMOSET",       2,  2 },
     { "KAKSI PARIA",    2,  2 }
@@ -59,8 +61,8 @@ static int arvot_m[5] = { 0 };
 
 int arvioi_voitto_kasi(void) {
     int i, vari = 0xFF, suora = 0, jokeri = 0;
-    fast_memset(arvot, 0, sizeof(arvot));
-    fast_memset(arvot_m, 0, sizeof(arvot_m));
+    memset(arvot, 0, sizeof(arvot));
+    memset(arvot_m, 0, sizeof(arvot_m));
 
     for (i = 0; i < 5; ++i) {
         vari &= poyta[i] == K_JOKERI ? vari : 1 << KMAA(poyta[i]);
@@ -78,8 +80,8 @@ int arvioi_voitto_kasi(void) {
         i = 0;
         while (!arvot[i])
             ++i;
-        if (i == 0 && arvot[12])      /* A-10 purkka */
-            i = 8;                    /* siirr„ alku 10:iin jos A ja K */
+        if (i == 0 && (arvot[11] || arvot[12]))           /* A-10 purkka */
+            i = 8;                    /* siirrÃ¤ alku 10:iin jos A ja K/Q */
         for (j = 1; j < 5; ++j) {
             if (++i >= ARVOT_N) {
                 suora = skip && j == 4; /* 10 J Q K jokeri */
@@ -100,7 +102,7 @@ int arvioi_voitto_kasi(void) {
         i = 0; /* viitoset */
 
     else if (vari && suora)
-        i = 1; /* v„risuora */
+        i = 1; /* vÃ¤risuora */
 
     else if (arvot_m[4])
         i = 2; /* neloset */
@@ -108,14 +110,12 @@ int arvioi_voitto_kasi(void) {
         i = 2; /* neloset */
 
     else if (arvot_m[3] && arvot_m[2])
-        i = 3; /* t„ysk„si */
+        i = 3; /* tÃ¤yskÃ¤si */
     else if (jokeri && arvot_m[2] == 2)
-        i = 3; /* t„ysk„si */
-    else if (jokeri && arvot_m[3])
-        i = 3; /* t„ysk„si */
+        i = 3; /* tÃ¤yskÃ¤si */
 
     else if (vari)
-        i = 4; /* v„ri */
+        i = 4; /* vÃ¤ri */
 
     else if (suora)
         i = 5; /* suora */
@@ -129,7 +129,7 @@ int arvioi_voitto_kasi(void) {
         i = 7; /* kaksi paria */
 
     else
-        i = -1; /* ei mit„„n */
+        i = -1; /* ei mitÃ¤Ã¤n */
 
     voitto_kasi = i;
     return i >= 0;
