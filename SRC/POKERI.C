@@ -224,7 +224,7 @@ int lue_asetus(const char *nimi, const char *arvo) {
             paavoitto = 1000;
             jokeri_saatavilla = 1;
             jokeri_minimipanos = 8;
-            KERTOIMET(kertoimet_200_N, kertoimet_200_J);
+            KERTOIMET(kertoimet_1000j_N, kertoimet_1000j_J);
         } else {
             if (english) {
                 printf("Config error: unrecognized model: '%s'\n", arvo);
