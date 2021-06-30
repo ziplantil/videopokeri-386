@@ -1511,7 +1511,7 @@ void aja_peli_internal(void) {
             PYSAYTA_AANET();
             alusta_tila(T_TUPLA1);
         }
-        if (!toistaa_aanta() && !musan_toisto) {
+        if (tila == T_TUPLAOK && !toistaa_aanta() && !musan_toisto) {
             musan_toisto = 1;
             toista_musiikki(MUSA_VOITTO, 96 + tuplaus_ctr * 24);
         }
