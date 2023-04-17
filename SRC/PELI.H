@@ -5,25 +5,25 @@
 #include "KORTTI.H"
 
 enum Pelitila {
-    /* odottaa ett„ pelaaja tekee jotain */
+    /* odottaa ettÃ¤ pelaaja tekee jotain */
     T_PANOS,    /* aivan alussa */
     T_VALITSE,  /* pelaaja valitsee kortit */
-    T_VOITTO,   /* k„si jolla voitti, uutta panosta tai tuplaus */
+    T_VOITTO,   /* kÃ¤si jolla voitti, uutta panosta tai tuplaus */
     T_TUPLAUS,  /* pieni vai iso? */
     T_TUPLAOK,  /* voitit tuplauksen, uusi tuplaus? */
-    T_TUPLAEI,  /* v„„rin, menet„t rahat. panosta */
+    T_TUPLAEI,  /* vÃ¤Ã¤rin, menetÃ¤t rahat. panosta */
     
     /* automaattitiloja */
-    T_JAKO1,    /* kortit ker„t„„n */
+    T_JAKO1,    /* kortit kerÃ¤tÃ¤Ã¤n */
     T_JAKO2,    /* pakan sekoitus */
     T_JAKO3,    /* pakka jakaa kortit */
 
     T_UJAKO1,   /* valitsemattomat pudotetaan */
     T_UJAKO2,   /* uudet kortit jaetaan */
-    T_UJAKO3,   /* tinnitys j„„vistyy */
-    T_UJAKO4,   /* pakka lent„„ takaisin */
+    T_UJAKO3,   /* tinnitys jÃ¤Ã¤vistyy */
+    T_UJAKO4,   /* pakka lentÃ¤Ã¤ takaisin */
     
-    T_TUPLA1,   /* kortit/kortti ker„t„„n */
+    T_TUPLA1,   /* kortit/kortti kerÃ¤tÃ¤Ã¤n */
     T_TUPLA2,   /* panos tuplataan */
     T_TUPLA3,   /* pakan sekoitus */
     T_TUPLA4,   /* kortin jako */
@@ -32,9 +32,9 @@ enum Pelitila {
     T_KONKKA,   /* rahat loppu */
 
     /* esittelytilat */
-    T_ESIT0,    /* korttien selki„ pitkin ruutua */
+    T_ESIT0,    /* korttien selkiÃ¤ pitkin ruutua */
     T_ESIT1,    /* kortit liukuvat alas ruutua */
-    T_ESIT2,    /* k„sien esittely */
+    T_ESIT2,    /* kÃ¤sien esittely */
 };
 
 struct Pelikortti {

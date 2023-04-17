@@ -58,11 +58,11 @@ int alusta_innova(void) {
     IO_PORT = soittolaite_sidportti;
     
     reset_innova();
-    /* Onkos siellÑ SIDiÑ? kokeillaas OSC3 */
+    /* Onkos siell√§ SIDi√§? kokeillaas OSC3 */
     s = IO_PORT + 0x1b;
     /* OSC3 hiljaiseksi */
     SID_WRITE(0x18, reg[0x18] | 0x80);
-    /* ja sitten pÑÑlle. 50 Hz (0x0937) ja pulssisuhde aivan ylîs */
+    /* ja sitten p√§√§lle. 50 Hz (0x0937) ja pulssisuhde aivan yl√∂s */
     SID_WRITE(0x0E, 0x37);
     SID_WRITE(0x0F, 0x09);
     SID_WRITE(0x10, 0xFF);
@@ -72,7 +72,7 @@ int alusta_innova(void) {
     a1 = inp(s);
     microsleep(50000);
     a2 = inp(s);
-    /* pÑittÑin */
+    /* p√§itt√§in */
     SID_WRITE(0x10, 0x00);
     SID_WRITE(0x11, 0x00);
     microsleep(30000);

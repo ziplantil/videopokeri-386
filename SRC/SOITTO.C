@@ -50,7 +50,7 @@ int kanavia_max_musa = 0;
 int kanavia_max_sfx = 0;
 
 /**********************************/
-/*  YLEISIŽ                       */
+/*  YLEISIÃ„                       */
 /**********************************/
 
 void soitto_paivita_0() { }
@@ -67,7 +67,7 @@ void (*_soitto_pysayta)(void)   = &soitto_pysayta_0;
 void (*_soitto_lopeta)(void)    = &soitto_lopeta_0;
 
 /**********************************/
-/*  SISŽINEN KAIUTIN              */
+/*  SISÃ„INEN KAIUTIN              */
 /**********************************/
 /* ks. S_PC.C */
 
@@ -242,8 +242,8 @@ int alusta_soitto(void) {
 
 const char *soittolaitteen_nimi(int soittolaite) {
     switch (soittolaite) {
-    case 0:         return english ? "(no sound)" : "(ei „„ni„)";
-    case 1:         return english ? "PC speaker" : "sis„inen kaiutin";
+    case 0:         return english ? "(no sound)" : "(ei Ã¤Ã¤niÃ¤)";
+    case 1:         return english ? "PC speaker" : "sisÃ¤inen kaiutin";
     case 2:         return "Tandy";
     case 3:         return "AdLib";
     case 4:         return "Creative Music System";

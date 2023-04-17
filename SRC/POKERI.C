@@ -14,12 +14,13 @@
 #include "VALOT.H"
 
 static const char *VERSION =
-    "VIDEOPOKERI-DOS 386 RISTIJÄTKÄ 2021 v1.6 2021-07-01";
+    "VIDEOPOKERI-DOS 386 RISTIJÄTKÄ 2021 v1.7 2023-04-17";
 
 static short frameskip_i = 0;
 static int soundtest = 0;
 static int configured_skip = -1;
 int english = 0;
+static int alkurahat = 0;
 void waste_cycles(void);
 
 #pragma aux waste_cycles = \
@@ -235,6 +236,8 @@ int lue_asetus(const char *nimi, const char *arvo) {
             }
             return 1;
         }
+    } else if (!strcmp(nimi, "rahat")) {
+        asetus_strtoul(arvo, &alkurahat);
     } else if (!strcmp(nimi, "skip")) {
         if (!*arvo || !strcmp(arvo, "auto")) {
             configured_skip = -1;
@@ -431,29 +434,37 @@ int main(int argc, char *argv[]) {
         return EXIT_SUCCESS;
     }
     puts("\n\n");
+    
 #if !NDEBUG
     n = 1, saldo = 50;
 #else
-    do {
-        char of[11];
-        if (english) {
-            puts("How many marks will you gamble today? ");
-        } else {
-            puts("Montako markkaa tänään uhkapelaat? ");
-        }
-        n = scanf("%10s", of);
-        n &= sscanf(of, "%9u", &saldo);
-        clearstdin();
-        if (n && (saldo > 1000000 || strlen(of) > 9)) {
+    if (alkurahat > 0) {
+        n = 1;
+        saldo = alkurahat;
+        /* odota vähän aikaa että näkyy debuggitiedot */
+        microsleep(1200000);
+    } else {
+        do {
+            char of[11];
             if (english) {
-                puts("Come on. Nobody has that much money.");
-                puts("If you did, you wouldn't be playing this.");
+                puts("How many marks will you gamble today? ");
             } else {
-                puts("Älä puhu paskaa");
+                puts("Montako markkaa tänään uhkapelaat? ");
             }
-            saldo = -1;
-        }
-    } while (!n || saldo < 0);
+            n = scanf("%10s", of);
+            n &= sscanf(of, "%9u", &saldo);
+            clearstdin();
+            if (n && (saldo > 1000000 || strlen(of) > 9)) {
+                if (english) {
+                    puts("Come on. Nobody has that much money.");
+                    puts("If you did, you wouldn't be playing this.");
+                } else {
+                    puts("Älä puhu paskaa");
+                }
+                saldo = -1;
+            }
+        } while (!n || saldo < 0);
+    }
 #endif
 
     if (n == EOF)

@@ -99,7 +99,7 @@ int alusta_cms(void) {
     goto detect_ok;
 
 detect_sb:
-    /* ehk„ meill„ on Sound Blaster 1.0 / 2.0? */
+    /* ehkÃ¤ meillÃ¤ on Sound Blaster 1.0 / 2.0? */
     tmp = reset_sb_dsp_io(io, 0);
     if (tmp == 0xAA) {
         outp(io + 12, 0xe1);

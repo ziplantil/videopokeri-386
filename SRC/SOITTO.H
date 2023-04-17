@@ -5,21 +5,21 @@
 #include "POKERI.H"
 
 #define COMMAND_NOOP 0
-/* laiteajurin on k„sitelt„v„ n„m„ */
+/* laiteajurin on kÃ¤siteltÃ¤vÃ¤ nÃ¤mÃ¤ */
 #define COMMAND_NOTE_ON 1
 #define COMMAND_NOTE_OFF 2
 #define COMMAND_INSTRUMENT 3
 
-/* n„m„ k„sittelee „„nimoottori, laiteajurin ei tarvitse */
+/* nÃ¤mÃ¤ kÃ¤sittelee Ã¤Ã¤nimoottori, laiteajurin ei tarvitse */
 #define COMMAND_RESTART 0x80
 #define COMMAND_END 0xFF
 
-/* k„„nnet„„nk” Sound Blasterin PCM-tuki (mukaan lukien PCM-„„net)? */
+/* kÃ¤Ã¤nnetÃ¤Ã¤nkÃ¶ Sound Blasterin PCM-tuki (mukaan lukien PCM-Ã¤Ã¤net)? */
 #define SB_PCM 1
 
 /*
-    0 = ei mit„„n
-    1 = sis„inen kaiutin
+    0 = ei mitÃ¤Ã¤n
+    1 = sisÃ¤inen kaiutin
     2 = Tandy
     3 = AdLib
     4 = Game Blaster (CMS)

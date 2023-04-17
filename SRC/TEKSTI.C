@@ -141,8 +141,8 @@ int measure_vfont(const unsigned char *t, int lihavoi) {
     unsigned char c;
     int w = *t ? -tekstivali : 0;
     while (c = *t++) {
-        if (c == 'Ž') c = 'a';
-        if (c == '™') c = 'o';
+        if (c == 'Ã„') c = 'a';
+        if (c == 'Ã–') c = 'o';
         if (c == '!') {
             ++w;
             continue;
@@ -158,8 +158,8 @@ void piirra_teksti(int x, int y, int vari,
     unsigned char c;
     int w, ox = x;
     while (c = *t++) {
-        if (c == 'Ž') c = 'a';
-        if (c == '™') c = 'o';
+        if (c == 'Ã„') c = 'a';
+        if (c == 'Ã–') c = 'o';
         if (c == '!') {
             ++x;
             continue;

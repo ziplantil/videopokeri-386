@@ -67,7 +67,7 @@ void piirra_selka_peitetty(short x1, short x2, short y) {
     if (xo >= (KORTTI_L - 8) || xo <= -KORTTI_L + 8)
         piirra_selka(x1, y);
     else if (xo > 0) {
-        /* piirr„ vasen reuna */
+        /* piirrÃ¤ vasen reuna */
         o = y * STRIDE + (x1 >> 3);
         for (i = 0; i < 8; ++i) {
             KAIKKI_TASOT_OR(o, corner_l[i]);
@@ -82,7 +82,7 @@ void piirra_selka_peitetty(short x1, short x2, short y) {
                                 selka_cache);
         }
     } else if (xo < 0) {
-        /* piirr„ oikea reuna */
+        /* piirrÃ¤ oikea reuna */
         short xm = x1 + KORTTI_L - 8, xc;
         piirra_suorakulmio(xm + xo, y, -xo, KORTTI_K, 15);
         o = y * STRIDE + (xm >> 3);
