@@ -115,7 +115,7 @@ void pcm_play(const unsigned char *data, unsigned n, int samplerate) {
     unsigned long buf = samplerate / 10;
     assert((lp >> 24) == 0);
     /* 100 ms eteen kaiken varalta */
-    fast_memset(p, 0, buf);
+    fast_memset(p, 0x80, buf);
     fast_memcpy(p + buf, data, n);
     n += buf;
     _disable();
