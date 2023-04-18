@@ -101,34 +101,37 @@ void pcm_stop(void) {
     if (!pcm_playing) return;
     pcm_playing = 0;
     sb_write(0xd3);
-    reset_sb_dsp(1);
     outp(DMA_CHANNEL_IO(sb_dma, 0xA), 4 + (sb_dma & 3));
     if (!in_irq) _disable();
     set_imr(sb_irq & 8 ? 0xa0 : 0x20, imr_backup);
     swap_inth(int_irq(sb_irq), NULL, dma_interrupt_backup);
+    reset_sb_dsp(1);
     if (!in_irq) _enable();
 }
 
 void pcm_play(const unsigned char *data, unsigned n, int samplerate) {
     unsigned char pic, *p = dma_getptr(&dmabuf), tmp;
     unsigned long lp = dma_linearptr(&dmabuf);
+    unsigned long buf = samplerate / 10;
     assert((lp >> 24) == 0);
+    /* 100 ms eteen kaiken varalta */
+    fast_memset(p, 0, buf);
+    fast_memcpy(p + buf, data, n);
+    n += buf;
     _disable();
     pcm_stop();
     pcm_playing = 1;
-    tmp = reset_sb_dsp(1);
-    assert(tmp == 0xaa);
-    fast_memcpy(p, data, n);
-    dma_commit(&dmabuf, 0, n);
     --n;
     pic = sb_irq & 8 ? 0xa0 : 0x20;
-    imr_backup = get_imr(pic);
-    set_imr(pic, imr_backup & ~(1 << (sb_irq & 7)));
-    outp(pic, 0x60 + (sb_irq & 7));
     swap_inth(int_irq(sb_irq), &dma_interrupt_backup, &pcm_stop_irq);
-    _enable();
+    imr_backup = get_imr(pic);
+    outp(pic, 0x60 + (sb_irq & 7));
+    set_imr(pic, imr_backup & ~(1 << (sb_irq & 7)));
+    sb_write(0x40);
+    sb_write((unsigned char)(256UL - (1000000UL / samplerate)));
     sb_write(0xd1);
     outp(DMA_CHANNEL_IO(sb_dma, 0xA), 4 + (sb_dma & 3));
+    outp(DMA_CHANNEL_IO(sb_dma, 0xC), 1);
     outp(DMA_CHANNEL_IO(sb_dma, 0xB), 0x48 + (sb_dma & 3));
     outp(dma_page[sb_dma], lp >> 16);
     outp(DMA_CHANNEL_IO(sb_dma, 0xC), 1);
@@ -138,11 +141,10 @@ void pcm_play(const unsigned char *data, unsigned n, int samplerate) {
     outp(DMA_CHANNEL_IO(sb_dma, 0x3), n & 0xFF);
     outp(DMA_CHANNEL_IO(sb_dma, 0x3), (n >> 8) & 0xFF);
     outp(DMA_CHANNEL_IO(sb_dma, 0xA), sb_dma & 3);
-    sb_write(0x40);
-    sb_write((unsigned char)(256UL - (1000000UL / samplerate)));
     sb_write(0x14);
     sb_write(n & 0xFF);
     sb_write((n >> 8) & 0xFF);
+    _enable();
 }
 
 static void interrupt far pcm_stop_irq() {
@@ -174,7 +176,7 @@ int alusta_sb(void) {
     if (result)
         return result;
 #if SB_PCM
-    result = dma_alloc(&dmabuf, 10240);
+    result = dma_alloc(&dmabuf, 8000);
     if (result)
         return result;
     pcm_enabled = reset_sb_dsp(0) == 0xaa;
