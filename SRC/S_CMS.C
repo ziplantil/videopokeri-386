@@ -428,6 +428,7 @@ static const struct cms_instrument _instr[] = {
     /* 21 */        { 0xB, 0, 3, 0x0, 0,   0, 1, 0x73, 0x10, 0, 0x00,   0 },
     /* 22 */        { 0x9, 0, 2, 0x0, 0,  84, 0, 0x00, 0x80, 0, 0x00,   0 },
     /* 23 */        { 0xB, 0, 3, 0x0, 0,   0, 1, 0x73, 0x10, 0, 0x00,   0 },
+    /* 24 */        { 0xE, 0, 6, 0x0, 6,   0, 0, 0x00, 0x00, 0, 0x00,   0 },
     /*                VOL  A  D   S   R   TP  N? N-OF  N-VL  E? E-FF E-TP */
 };
 static const int instruments_cnt = sizeof(_instr) / INSTR_SIZE;

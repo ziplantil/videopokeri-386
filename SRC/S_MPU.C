@@ -238,6 +238,7 @@ static const struct midi_instrument _bnk_midi[] = {
 /* 21 */    { 2,  42,    0, 0x7F, 0x7F, 0x5F },
 /* 22 */    { 2,  56,    0, 0x7F, 0x7F, 0x7F },
 /* 23 */    { 2,  38,    0, 0x7F, 0x7F, 0x3F },
+/* 24 */    { 1,  11,   36, 0x7F, 0x20, 0x7F },
 /*  --------- T  PNo   TP    ATK   REL   VOL -- */
 };
 
@@ -274,6 +275,7 @@ static const struct midi_instrument _bnk_mt32[] = {
 /* 21 */    { 2,  42,    0, 0x7F, 0x7F, 0x5F },
 /* 22 */    { 2,  56,    0, 0x7F, 0x7F, 0x7F },
 /* 23 */    { 2,  40,    0, 0x7F, 0x7F, 0x5F },
+/* 24 */    { 1,  38,   25, 0x7F, 0x20, 0x7F },
 /*  --------- T  PNo   TP    VEL   VOL -- */
 };
 static const int instruments_cnt = sizeof(_bnk_midi) / sizeof(_bnk_midi[0]);

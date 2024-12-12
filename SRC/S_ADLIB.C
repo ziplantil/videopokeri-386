@@ -244,7 +244,7 @@ void soitto_lopeta_adlib(void) {
             04: modulator (op 0)    base 20 (flags, EG, key scale, mul)
             05: modulator (op 0)    base 40 (key scale, output level)
             06: modulator (op 0)    base 60 (attack/decay)
-            07: modulator (op 0)    base 80 (sustain/rate)
+            07: modulator (op 0)    base 80 (sustain/release)
 
             08: transpose           +12 = +1 8ve, -12 = -1 8ve
 
@@ -252,7 +252,7 @@ void soitto_lopeta_adlib(void) {
             0a: carrier (op 1)      base 20 (AM/VIB/EG/KSR/Multiplier)
             0b: carrier (op 1)      base 40 (flags, EG, key scale, mul)
             0c: carrier (op 1)      base 60 (attack/decay)
-            0d: carrier (op 1)      base 80 (sustain/rate)
+            0d: carrier (op 1)      base 80 (sustain/release)
     
 
     c0      bits 3-1: feedback (0-7), bit 0: connecting mode (0 = FM, 1 = AM)
@@ -342,5 +342,8 @@ static const unsigned char _bnk[] = {
 /* 23 */
     0x00, 0x00, 0x0e, 0x02, 0x00, 0x00, 0xfc, 0x05,
                 0x00, 0x00, 0x00, 0x07, 0xfa, 0x17,
+/* 24 */
+    0x00, 0x00, 0x00, 0x02, 0x22, 0x60, 0xb3, 0x53,
+                  12, 0x00, 0x31, 0x00, 0xf2, 0xf1,
 };
 static const int instruments_cnt = sizeof(_bnk) / INSTR_SIZE;

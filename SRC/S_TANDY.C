@@ -269,7 +269,7 @@ void soitto_lopeta_tandy(void) {
     4       release. 0 for instant, 1-7 for faster-slower
     5       note transpose
     6       is noise? 0 = tone, 1 = noise
-    7       SN76489 noise flags (0-2 perid, +4 = white, +0 = periodic)
+    7       SN76489 noise flags (0-2 period, +4 = white, +0 = periodic)
 */
 static const struct tandy_instrument _instr[] = {
     /*                VOL  A  D   S   R   TP  N? N-F */
@@ -297,6 +297,7 @@ static const struct tandy_instrument _instr[] = {
     /* 21 */        { 0xB, 0, 3, 0x0, 0,   0, 1, 0x0 },
     /* 22 */        { 0x9, 0, 2, 0x0, 0,  72, 0, 0x0 },
     /* 23 */        { 0xB, 0, 3, 0x0, 0,   0, 1, 0x0 },
+    /* 24 */        { 0xF, 0, 6, 0x0, 6,   0, 0, 0x0 },
     /*                VOL  A  D   S   R   TP  N? N-F */
 };
 static const int instruments_cnt = sizeof(_instr) / INSTR_SIZE;

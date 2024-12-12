@@ -77,6 +77,7 @@
         21:     rumpu3              (päävoitto)
         22:     tiuku               (päävoitto)
         23:     rumpu4              (päävoitto)
+        24:     loppusointu         (päävoitto)
     ***/
 
 const unsigned short *A_tyhja[] = { KANAVAT_LOPPU };
@@ -256,8 +257,9 @@ const unsigned short A_Mtsajaja0[] = {
     ODOTA(240),
     
     PAALLE( 0, NG_(4)), POIS(240),
-    PAALLE( 0, NAs(4)), POIS(240),
-    PAALLE( 0, NA_(4)), POIS(480),
+    PAALLE( 0, NAs(4)), POIS(100),
+    SOITIN(0, 24),
+    PAALLE( 0, NA_(4)), POIS(180),
     
     LOPPU(480)
 };
@@ -282,8 +284,9 @@ const unsigned short A_Mtsajaja1[] = {
     PAALLE( 0, ND_(3)), POIS(240),
     ODOTA(240),
     
-    PAALLE( 0, NB_(2)), POIS(480),
-    PAALLE( 0, ND_(4)), POIS(480),
+    PAALLE( 0, NB_(2)), POIS(340),
+    SOITIN(0, 24),
+    PAALLE( 0, NA_(3)), POIS(180),
     
     LOPPU(480)
 };
@@ -354,10 +357,7 @@ const unsigned short A_Mtsajaja2[] = {
     PAALLE( 45, NF_(2)), POIS(15),
     PAALLE( 15, NG_(2)), POIS(15),
     PAALLE( 15, NC_(3)), POIS(15),
-    PAALLE(165, NC_(3)), POIS(15),
-    PAALLE( 15, NC_(3)), POIS(15),
-    PAALLE( 15, NC_(3)), POIS(15),
-    ODOTA(45),
+    ODOTA(285),
     
     LOPPU(480)
 };
@@ -410,8 +410,7 @@ const unsigned short A_Mtsajaja3[] = {
     PAALLE( 60, NC_(0)), POIS(30),
     PAALLE( 90, NC_(0)), POIS(30),
     PAALLE( 90, NC_(0)), POIS(30),
-    PAALLE(  0, NC_(0)), POIS(30),
-    PAALLE( 60, NC_(0)), POIS(30),
+    ODOTA(120),
     LOPPU(480)
 };
 
