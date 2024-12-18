@@ -15,8 +15,8 @@ Pelin voi myös kääntää itse Watcomin C-kääntäjällä (mukaan lukien Open
 Julkaisuversion EXE on käännetty Open Watcomilla ja PMODE/W:llä.
 
 Peliä pelataan Q/W/E/R/T ja A/S/D/F/G/H -näppäimillä, jotka ovat samassa
-asettelussa kuin ruudun alareunassa näkyvät napit. Pelistä poistutaan joko
-Escillä tai Backspacella/askelpalauttimella.
+asettelussa kuin ruudun alareunassa näkyvät napit (kenossa Q/W/E/Y, A/S/D/H).
+Pelistä poistutaan joko Escillä tai Backspacella/askelpalauttimella.
 
 Jos asetukset sallivat, lisää rahaa voi lisätä N/M-näppäimillä (1mk/5mk).
 
@@ -44,6 +44,6 @@ The game can be compiled with Watcom's C compiler (also with Open Watcom).
 The .EXE provided is compiled with Open Watcom and PMODE/W.
 The configuration for the game happens through POKERI.CFG, which must be
 located in the same directory as POKERI.EXE.
-The game is played with the Q/W/E/R/T A/S/D/F/G/H keys (bottom row of buttons)
-and Esc/Backspace can be used to exit.
+The game is played with the Q/W/E/R/T A/S/D/F/G/H keys (buttons shown at the
+bottom; in keno mode, Q/W/E/Y A/S/D/H) and Esc/Backspace can be used to exit.
 If settings allow, N/M can be used to add more money in-game (1mk/5mk).
