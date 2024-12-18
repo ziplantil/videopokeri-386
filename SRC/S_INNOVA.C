@@ -26,7 +26,7 @@ static unsigned short current_track = 0;
 static unsigned char instruments[4] = { 0 };
 static unsigned char chip_instruments[3] = { 0 };
 static signed char transpose[4] = { 0 };
-static signed char channelmap[8] = { -1, -1, -1, -1, -1, -1, -1 };
+static signed char channelmap[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
 
 #define INSTR_SIZE (sizeof(struct sid_instrument))
 static const struct sid_instrument _instr[];
@@ -36,14 +36,14 @@ static const int instruments_cnt;
         outp(IO_PORT + (r), reg[r] = (v));   \
     } while (0)
 
-void reset_innova(void) {
+static void reset_innova(void) {
     int i;
     for (i = 0; i < 25; ++i) {
         SID_WRITE(i, 0);
     }
 }
 
-void silence_innova(void) {
+static void silence_innova(void) {
     int i;
     for (i = 0; i < 21; i += 7) {
         SID_WRITE(i, 0);
@@ -185,7 +185,6 @@ static void setup_filter(int m) {
     default:
         break;
     }
-
 }
 
 static void map_channels(int m) {
@@ -270,6 +269,8 @@ static const struct sid_instrument _instr[] = {
     /* 22 */        { 0x10, 0xF, 0x0, 0x4, 0x0, 0x4,  83, 0x000 },
     /* 23 */        { 0x80, 0xF, 0x0, 0x4, 0x0, 0x4,  69, 0x000 },
     /* 24 */        { 0x40, 0xF, 0x0, 0xA, 0x0, 0xA,  12, 0x200 },
+    /* 25 */        { 0x80, 0x8, 0x5, 0x0, 0xF, 0x6,  38, 0x000 },
+    /* 26 */        { 0x80, 0x8, 0x5, 0x0, 0xF, 0x8,  38, 0x000 },
     /*                SIDC  -V-   A    D    S    R    TP  Pu-Wd */
 };
 static const int instruments_cnt = sizeof(_instr) / INSTR_SIZE;

@@ -53,7 +53,7 @@ static const int instruments_cnt;
         outp(IO_PORT, (reg2[r] = ((v) >> 4) & 63));                     \
     } while (0)
 
-void reset_tandy(void) {
+static void reset_tandy(void) {
     int i;
     for (i = 0; i < 8; i += 2) {
         TANDY_WRITE(i + 0, 0);
@@ -61,7 +61,7 @@ void reset_tandy(void) {
     }
 }
 
-void silence_tandy(void) {
+static void silence_tandy(void) {
     int i;
     for (i = 0; i < 8; i += 2) {
         TANDY_WRITE(i + 1, 15);
@@ -298,6 +298,8 @@ static const struct tandy_instrument _instr[] = {
     /* 22 */        { 0x9, 0, 2, 0x0, 0,  72, 0, 0x0 },
     /* 23 */        { 0xB, 0, 3, 0x0, 0,   0, 1, 0x0 },
     /* 24 */        { 0xF, 0, 6, 0x0, 6,   0, 0, 0x0 },
+    /* 25 */        { 0x6, 0, 4, 0x4, 4,   0, 1, 0x6 },
+    /* 26 */        { 0xC, 0, 4, 0xF, 4,   0, 1, 0x6 },
     /*                VOL  A  D   S   R   TP  N? N-F */
 };
 static const int instruments_cnt = sizeof(_instr) / INSTR_SIZE;

@@ -67,4 +67,6 @@ extern const unsigned char G_akka[];
 extern const unsigned char G_kurko[];
 extern const unsigned char G_jokeri[];
 
+extern const unsigned char G_kenoosuma[];
+
 #endif

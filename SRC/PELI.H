@@ -35,6 +35,8 @@ enum Pelitila {
     T_ESIT0,    /* korttien selkiä pitkin ruutua */
     T_ESIT1,    /* kortit liukuvat alas ruutua */
     T_ESIT2,    /* käsien esittely */
+
+    T_HUOLTO,   /* hae pelinhoitaja */
 };
 
 struct Pelikortti {
@@ -51,6 +53,7 @@ extern enum Pelitila tila;
 extern int panos;
 extern long pelit;
 extern long voitot;
+extern long lisarahat;
 extern char jatka;
 extern char jokeri;
 extern unsigned long tick;
@@ -58,16 +61,16 @@ extern unsigned long anim;
 extern char tickskip;
 extern char frameskip;
 extern char alapalkki_fade;
+extern int lisarahat_ok;
 
 void piirra_valinnat(char paivita);
 void piirra_alapalkki_voitto(char paivita);
 void piirra_alapalkki_vain_voitto(char paivita);
+void lisaa_panos(unsigned panos);
 
 void aanitesti(void);
 void alusta_tila(enum Pelitila tila);
 void aloita_peli(int saldo);
 void aja_peli(void);
-
-extern const char *pelitila_nimi(enum Pelitila t);
 
 #endif

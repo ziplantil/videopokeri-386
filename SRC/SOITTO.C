@@ -23,12 +23,14 @@ int soittolaite_sbdma = -1;
 int soittolaite_sidportti = -1;
 /* MPU-401-portti, oletus 0x330 */
 int soittolaite_mpuportti = -1;
+/* Covox Sound Master -portti, oletus 0x220 */
+int soittolaite_csm1portti = -1;
 
 static int pysaytetty = 1;
 static int toistaa = 0;
 
-unsigned int soittoaika = 0;
-unsigned int soittotempo = 0;
+static unsigned int soittoaika = 0;
+static unsigned int soittotempo = 0;
 
 #define OLETUSARVO(x,d) (((x) < 0) ? (d) : (x))
 #define OLETUSARVO_ASETA(x,d) (x = OLETUSARVO(x, d))
@@ -43,11 +45,11 @@ struct soittokanava {
     unsigned short viime_komento;
 };
 
-struct soittokanava kanavat[8];
-int kanavia = 0;
+static struct soittokanava kanavat[8];
+static int kanavia = 0;
 
-int kanavia_max_musa = 0;
-int kanavia_max_sfx = 0;
+static int kanavia_max_musa = 0;
+static int kanavia_max_sfx = 0;
 
 /**********************************/
 /*  YLEISIÄ                       */
@@ -155,29 +157,44 @@ void soitto_toista_mpu(int m);
 void soitto_pysayta_mpu(void);
 void soitto_lopeta_mpu(void);
 
+#if 0
+/**********************************/
+/*  COVOX SOUND MASTER I          */
+/**********************************/
+/* ks. S_CSM1.C */
+
+int alusta_csm1(void);
+void soitto_paivita_csm1(void);
+void soitto_komento_csm1(short *c, short hwc,
+                    unsigned char k, unsigned char x);
+void soitto_toista_csm1(int m);
+void soitto_pysayta_csm1(void);
+void soitto_lopeta_csm1(void);
+#endif
+
 /**********************************/
 /*  YLEISET                       */
 /**********************************/
 
 #define SOITTOFUNKTIOT(n) do {                              \
-        _soitto_paivita = &soitto_paivita_##n##;            \
-        _soitto_komento = &soitto_komento_##n##;            \
-        _soitto_toista = &soitto_toista_##n##;              \
-        _soitto_pysayta = &soitto_pysayta_##n##;            \
-        _soitto_lopeta = &soitto_lopeta_##n##;              \
+        _soitto_paivita = &soitto_paivita_##n ;             \
+        _soitto_komento = &soitto_komento_##n ;             \
+        _soitto_toista = &soitto_toista_##n ;               \
+        _soitto_pysayta = &soitto_pysayta_##n ;             \
+        _soitto_lopeta = &soitto_lopeta_##n ;               \
     } while (0)
 
 int alusta_soitto(void) {
     switch (soittolaite) {
-    case 0:
+    case SOITTOLAITE_NONE:
         SOITTOFUNKTIOT(0);
         kanavia_max_musa = kanavia_max_sfx = 0;
         return 0;
-    case 1:
+    case SOITTOLAITE_PC:
         SOITTOFUNKTIOT(pc);
         kanavia_max_musa = kanavia_max_sfx = 1;
         return 0;
-    case 2:
+    case SOITTOLAITE_TANDY:
         OLETUSARVO_ASETA(soittolaite_tandyportti, 0xc0);
         if (alusta_tandy()) {
             soittolaite = 0;
@@ -186,7 +203,7 @@ int alusta_soitto(void) {
         SOITTOFUNKTIOT(tandy);
         kanavia_max_musa = kanavia_max_sfx = 4;
         return 0;
-    case 3:
+    case SOITTOLAITE_ADLIB:
         OLETUSARVO_ASETA(soittolaite_fmportti, 0x388);
         if (alusta_adlib()) {
             soittolaite = 0;
@@ -195,7 +212,7 @@ int alusta_soitto(void) {
         SOITTOFUNKTIOT(adlib);
         kanavia_max_musa = 6, kanavia_max_sfx = 6;
         return 0;
-    case 4:
+    case SOITTOLAITE_CMS:
         OLETUSARVO_ASETA(soittolaite_cmsportti, 0x220);
         if (alusta_cms()) {
             soittolaite = 0;
@@ -204,7 +221,7 @@ int alusta_soitto(void) {
         SOITTOFUNKTIOT(cms);
         kanavia_max_musa = 4, kanavia_max_sfx = 4;
         return 0;
-    case 5:
+    case SOITTOLAITE_SB:
         OLETUSARVO_ASETA(soittolaite_fmportti, 0x388);
         OLETUSARVO_ASETA(soittolaite_sbportti, 0x220);
         OLETUSARVO_ASETA(soittolaite_sbirq, 5);
@@ -216,7 +233,7 @@ int alusta_soitto(void) {
         SOITTOFUNKTIOT(sb);
         kanavia_max_musa = 6, kanavia_max_sfx = 6;
         return 0;
-    case 6:
+    case SOITTOLAITE_INNOVA:
         OLETUSARVO_ASETA(soittolaite_sidportti, 0x280);
         if (alusta_innova()) {
             soittolaite = 0;
@@ -225,8 +242,8 @@ int alusta_soitto(void) {
         SOITTOFUNKTIOT(innova);
         kanavia_max_musa = 4, kanavia_max_sfx = 4;
         return 0;
-    case 7:
-    case 8:
+    case SOITTOLAITE_MPU:
+    case SOITTOLAITE_MT32:
         OLETUSARVO_ASETA(soittolaite_mpuportti, 0x330);
         if (alusta_mpu(soittolaite - 7)) {
             soittolaite = 0;
@@ -235,6 +252,17 @@ int alusta_soitto(void) {
         SOITTOFUNKTIOT(mpu);
         kanavia_max_musa = 6, kanavia_max_sfx = 6;
         return 0;
+#if 0
+    case SOITTOLAITE_CSM1:
+        OLETUSARVO_ASETA(soittolaite_csm1portti, 0x220);
+        if (alusta_csm1()) {
+            soittolaite = 0;
+            return 1;
+        }
+        SOITTOFUNKTIOT(csm1);
+        kanavia_max_musa = 4, kanavia_max_sfx = 4;
+        return 0;
+#endif
     default:
         return 1;
     }
@@ -242,15 +270,19 @@ int alusta_soitto(void) {
 
 const char *soittolaitteen_nimi(int soittolaite) {
     switch (soittolaite) {
-    case 0:         return english ? "(no sound)" : "(ei ääniä)";
-    case 1:         return english ? "PC speaker" : "sisäinen kaiutin";
-    case 2:         return "Tandy";
-    case 3:         return "AdLib";
-    case 4:         return "Creative Music System";
-    case 5:         return "Sound Blaster";
-    case 6:         return "Innovation SSI 2001";
-    case 7:         return "MPU-401 / General MIDI";
-    case 8:         return "Roland MT-32";
+    case SOITTOLAITE_NONE:      return english ? "(no sound)" : "(ei ääniä)";
+    case SOITTOLAITE_PC:        return english ? "PC speaker"
+                                               : "sisäinen kaiutin";
+    case SOITTOLAITE_TANDY:     return "Tandy";
+    case SOITTOLAITE_ADLIB:     return "AdLib";
+    case SOITTOLAITE_CMS:       return "Creative Music System";
+    case SOITTOLAITE_SB:        return "Sound Blaster";
+    case SOITTOLAITE_INNOVA:    return "Innovation SSI 2001";
+    case SOITTOLAITE_MPU:       return "MPU-401 / General MIDI";
+    case SOITTOLAITE_MT32:      return "Roland MT-32";
+#if 0
+    case SOITTOLAITE_CSM1:      return "Covox Sound Master";
+#endif
     default:        abort(); return NULL;
     }
 }
@@ -336,8 +368,9 @@ struct aanitieto {
 #define AANI_PANOS3 18
 #define AANI_PANOS4 19
 #define AANI_PANOS5 20
+#define AANI_KENO_HAVITTY 21
 
-const struct aanitieto aanitiedot[] = {      
+static const struct aanitieto aanitiedot[] = {      
     { A_tyhja,    120 },                     /* - */
     { A_Mvoitto,   96 },                     /* MUSA_VOITTO */
     { A_Mtuplaus, 120 },                     /* MUSA_TUPLAUS */
@@ -359,6 +392,7 @@ const struct aanitieto aanitiedot[] = {
     { A_Apanos3,  120 },                     /* AANI_PANOS3 */
     { A_Apanos4,  120 },                     /* AANI_PANOS4 */
     { A_Apanos5,  120 },                     /* AANI_PANOS5 */
+    { A_Akenoohi, 200 },                     /* AANI_KENO_HAVITTY */
 };
 #define AANET_N (sizeof(aanitiedot) / sizeof(aanitiedot[0]))
 
@@ -383,11 +417,11 @@ void toista_musiikki(int aani, int tempo) {
     if (aani < AANET_N) {
         if (toistaa)
             pysayta_aanet();
+        soittotempo = OLETUSARVO(tempo, aanitiedot[aani].tempo);
+        soittotempo = (soittotempo * 1024) / 60;
         (*_soitto_toista)(aani);
         soittoaika = 0;
         pysaytetty = 0;
-        soittotempo = OLETUSARVO(tempo, aanitiedot[aani].tempo);
-        soittotempo = (soittotempo * 1024) / 60;
         varaa_kanavat(aanitiedot[aani].data, 0, kanavia_max_musa);
     }
 }
@@ -401,11 +435,11 @@ void toista_aani(int aani) {
     if (aani < AANET_N) {
         if (toistaa)
             pysayta_aanet();
+        soittotempo = aanitiedot[aani].tempo;
+        soittotempo = (soittotempo * 1024) / 60;
         (*_soitto_toista)(aani);
         soittoaika = 0;
         pysaytetty = 0;
-        soittotempo = aanitiedot[aani].tempo;
-        soittotempo = (soittotempo * 1024) / 60;
         varaa_kanavat(aanitiedot[aani].data, 0, kanavia_max_sfx);
     }
 }

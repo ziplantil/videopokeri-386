@@ -90,14 +90,14 @@ static const unsigned char dma_page[8] = {
     0x87, 0x83, 0x81, 0x82, 0x8f, 0x8b, 0x89, 0x8a
 };
 
-void swap_inth(unsigned char intn, int_func_t *oldhandler,
-                int_func_t newhandler) {
+static void swap_inth(unsigned char intn, int_func_t *oldhandler,
+                      int_func_t newhandler) {
     if (oldhandler)
         *oldhandler = _dos_getvect(intn);
     _dos_setvect(intn, newhandler);
 }
 
-void pcm_stop(void) {
+static void pcm_stop(void) {
     if (!pcm_playing) return;
     pcm_playing = 0;
     sb_write(0xd3);
@@ -109,7 +109,7 @@ void pcm_stop(void) {
     if (!in_irq) _enable();
 }
 
-void pcm_play(const unsigned char *data, unsigned n, int samplerate) {
+static void pcm_play(const unsigned char *data, unsigned n, int samplerate) {
     unsigned char pic, *p = dma_getptr(&dmabuf), tmp;
     unsigned long lp = dma_linearptr(&dmabuf);
     unsigned long buf = samplerate / 10;

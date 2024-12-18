@@ -19,42 +19,57 @@
 #include "MUISTI.H"
 #include <assert.h>
 
-enum Pelitila tila;
-char jatka;
-int panos;
-long pelit;
-long voitot;
-int voitto;
-char jokeri;
-static char voitto_vilkku = 0;
-static char musan_toisto = 0;
-static char skip_input_read = 0;
-static int voitto_disp = 0;
-static int voitto_speed = 0;
-static int voitto_speed_mul = 0;
-static char new_mode = 0;
-static char card0zoom = 0;
-char tickskip = 0;
-static char tickskip_i = 0;
-char frameskip = 0;
-unsigned long anim = 0;
-unsigned long tick = 0;
-static char tuplaus = 0;
-char alapalkki_fade = 0;
-char alapalkki_vapaaksi = 0;
-static char sailotty_kortti = 0;
-static char kortti_sailotty = 0;
-static short sailotty_miny = 0;
-static short sailotty_maxy = CARDAREA_HEIGHT;
+enum Pelitila tila; // pelitila. ks. PELI.H
+char jatka; // <>0 jatkaa peliä, =0 lopettaa
+int panos; // tämänhetkinen panos
+long pelit; // pelirahojen määrä
+long lisarahat; // paljonko pelaaja on lisännyt rahaa alun jälkeen
+long voitot; // voittojen määrä
+static int voitto; // voitto tällä kierroksella
+char jokeri; // onko jokeri pelissä?
+static char voitto_vilkku = 0; // käytetään voittosumman vilkuttamiseen
+static char musan_toisto = 0; // toistaako musiikkia?
+static char skip_input_read = 0; // jätä napit lukematta, esittelystä tultaessa
+static int voitto_disp = 0; // alapalkissa näytettävät voitot
+            // esim. voitto_disp kasvaa hitaasti kohti voittoa
+static int voitto_hitaus = 0; // kuinka hitaasti lasketaan voittoa näytöllä
+            // suuremmat luvut = hitaampi
+static char new_mode = 0; // vaihdettiinko juuri pelitilaa?
+static char card0zoom = 0; // jos pakka (kortti 0) lentää, päivitä se kahdesti
+char tickskip = 0; // montako tickkiä jätetään välistä joka frame
+static char tickskip_i = 0; // tickskip-laskuri
+char frameskip = 0; // montako framea jätetään välistä joka frame
+unsigned long anim = 0; // tilan alussa 0, kasvaa jokaista näytettyä framea
+            // kohden, eli tickskip + 1 joka tick
+unsigned long tick = 0; // montako tickiä yhteensä
+static char tuplaus = 0; // ollaanko tuplaamassa
+char alapalkki_fade = 0; // alapalkin väri: 0 = ei voittoa, 8 = voitto (liila),
+            // 1-7 = animaatio jossa palkki vähitellen muuttuu liilaksi,
+            // 9-15 = animaatio jossa palkin liila väri katoaa
+static char alapalkki_vapaaksi = 0; // vaaditaan alapalkkia vapaaksi,
+            // eli että valittu-kuvat ovat hävinneet sieltä pois
 static char tuplaus_ctr = 0;
+            // montako kertaa tuplattu (vaikuttaa musiikin nopeuteen)
 static char oli_paavoitto = 0;
+            // oliko päävoitto? (vilkuta ruutua, ym.)
 static char palswap = 0;
+            // ruudun vilkutus päävoiton yhteydessä
 static char yks_kerrallaan = 0;
-static int card_fall_speed = 0;
+            // pudotetaanko voittokuvat yksi kerrallaan?
 static int inactive = 0;
-static int present_y = 0;
-static int present_hand = 0;
-static int present_panos;
+            // laskuri jos käyttäjä ei paina mitään, siirtyy esittelytilaan
+static int demo_y = 0;
+            // esittelytila: Y-koordinaatti ruudulla
+static int demo_hand = 0;
+            // esittelytila: esiteltävän käden numero
+static int demo_panos;
+            // esittelytila: esiteltävä panos
+static int koputus_anim;
+            // koputusanimaatiossa käytettävä laskuri
+int lisarahat_ok = 1; // voiko pelaaja lisätä rahaa pelin aikana
+
+#define napit napit_kaikki.p.pokeri
+#define valot valot_eli.pokeri
 
 #define PAKKA_X 16
 #define PAKKA_Y 48
@@ -71,6 +86,7 @@ static int present_panos;
 #define SPEED_MUL(x) ((x) * (tickskip + 1))
 #define PYSAYTA_AANET() (musan_toisto = 0, pysayta_aanet())
 
+// kortti 0 on pakka, 1-5 ovat pöydällä olevat 5 korttia
 struct Pelikortti pelikortit[6] = { 
     { PAKKA_X, PAKKA_Y, 0, 1, 1, 0 }, /* selkäpuoli */
     { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }, /* kortti 1, tyhjä */
@@ -79,11 +95,12 @@ struct Pelikortti pelikortit[6] = {
     { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }, /* kortti 4, tyhjä */
     { PAKKA_X, PAKKA_Y, 0, 0, 0, 0 }  /* kortti 5, tyhjä */
 };
+// säilyttää edelliset kortit, täältä tarkistetaan esim. vanhat koordinaatit
 struct Pelikortti pelikortit_v[6];
-unsigned char *kortti_caches[6] = { 0 };
+// kopiot korttikuvista, esittely käyttää 1-5 mutta itse peli vain 0
+static unsigned char *kortti_caches[6] = { 0 };
 
-const char* logokartta = \
-    "   X    X  X  XXXX   XXXXX   XXX    "
+/** "   X    X  X  XXXX   XXXXX   XXX    "
     "   X    X  X  X   X  X      X   X   "
     "    X  X   X  X   X  XXXXX  X   X   "
     "     X X   X  X   X  X      X   X   "
@@ -94,11 +111,25 @@ const char* logokartta = \
     "X   X  X   X  X  X   X      X   X  X"
     "XXXX   X   X  XXX    XXXXX  XXXX   X"
     "X      X   X  X  X   X      X  X   X"
-    "X       XXX   X   X  XXXXX  X   X  X";
+    "X       XXX   X   X  XXXXX  X   X  X"; */
+static const unsigned char logokartta[] = {
+    0x10, 0x93, 0xc7, 0xc7, 0x00,
+    0x10, 0x92, 0x24, 0x08, 0x80,
+    0x09, 0x12, 0x27, 0xc8, 0x80,
+    0x05, 0x12, 0x24, 0x08, 0x80,
+    0x02, 0x13, 0xc7, 0xc7, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00,
+    0xf0, 0xe2, 0x27, 0xcf, 0x10,
+    0x89, 0x12, 0x44, 0x08, 0x90,
+    0xf1, 0x13, 0x87, 0xcf, 0x10,
+    0x81, 0x12, 0x44, 0x09, 0x10,
+    0x80, 0xe2, 0x27, 0xc8, 0x90,
+};
 
 #define PAIVITA_KORTTI(i) (pelikortit[i].muutettu = 1)
 
-void paivita_kaikki_kortit(void) {
+static void paivita_kaikki_kortit(void) {
     PAIVITA_KORTTI(0);
     PAIVITA_KORTTI(1);
     PAIVITA_KORTTI(2);
@@ -107,7 +138,8 @@ void paivita_kaikki_kortit(void) {
     PAIVITA_KORTTI(5);
 }
 
-int lerp(int y1, int y2, int x1, int x, int x2) {
+// lineaari-interpolaatio
+static int lerp(int y1, int y2, int x1, int x, int x2) {
     if (x > x2) x = x2;
     return (y1 * (x2 - x) + y2 * (x - x1)) / (x2 - x1);
 }
@@ -128,6 +160,7 @@ static const char *tuplaus_onnittelut_e[] = {
 };
 #define ONNITTELU_N (sizeof(tuplaus_onnittelut) / sizeof(tuplaus_onnittelut[0]))
 
+#if 0
 const char *pelitila_nimi(enum Pelitila t) {
     switch (t) {
     case T_PANOS: return "T_PANOS";
@@ -153,21 +186,25 @@ const char *pelitila_nimi(enum Pelitila t) {
     default: abort(); return NULL;
     }
 }
+#endif
 
-void paivita_alue_kortti(short x1, short y1, short x2, short y2) {
+static void paivita_alue_kortti(short x1, short y1, short x2, short y2) {
     if (y2 > CARDAREA_HEIGHT) y2 = CARDAREA_HEIGHT;
     if (y1 > CARDAREA_HEIGHT) y1 = CARDAREA_HEIGHT;
     if (y1 < y2)
         paivita_alue(x1, y1, x2 - x1, y2 - y1);
 }
 
-void paivita_kortit(void) {
-    int i, j;
+static void paivita_kortit(void) {
+    int i;
     struct Pelikortti *pk, *pv;
     char r = 0;
-    static short rx1, ry1, rx2, ry2;
-    static short tx1, ty1, tx2, ty2;
+    short rx1, ry1, rx2, ry2;
+    short tx1, ty1, tx2, ty2;
 
+    // x- ja y-koordinaatit jotka päivittää vanhasta pelikorista verrattuna
+    // esim. jos kortti liikkuu vasemmalle, niin suorakulmio on sen uuden
+    // sijainnin oikealla puolella
 #define AUTO_RECT() do {                                        \
                 if (pk->x < pv->x)                              \
                     tx1 = pk->x, tx2 = pv->x + KORTTI_L;        \
@@ -178,6 +215,8 @@ void paivita_kortit(void) {
                 else                                            \
                     ty1 = pv->y, ty2 = pk->y + KORTTI_K;        \
     } while (0);
+    // päivittää alueen tx1-tx2, ty1-ty2
+    // yrittää yhdistää suorakulmioon r
 #define COMMIT_RECT() do {                                      \
         if (!r)                                                 \
             ++r, rx1 = tx1, ry1 = ty1, rx2 = tx2, ry2 = ty2;    \
@@ -188,34 +227,25 @@ void paivita_kortit(void) {
             rx2 = MAX(rx2, tx2), ry2 = MAX(ry2, ty2);           \
     } while (0);
 
-    for (i = card0zoom ? 6 : 5; i >= 0; --i) {
-        j = i == 6 ? 0 : i;
-        pk = &pelikortit[j];
-        pv = &pelikortit_v[j];
+    if (card0zoom && pelikortit[0].muutettu) {
+        // tyhjän tilan piirto heti pakalle
+        pk = &pelikortit[0];
+        pv = &pelikortit_v[0];
+        siirra_tyhja(pv->x, pv->y, pk->x, pk->y);
+    }
+
+    for (i = 5; i >= 0; --i) {
+        pk = &pelikortit[i];
+        pv = &pelikortit_v[i];
         if (pk->muutettu) {
-            if (i == j)
-                pk->muutettu = 0;
-            if (j == 0 && card0zoom) {
-                if (i) {
-                    siirra_tyhja(pv->x, pv->y, pk->x, pk->y);
-                    continue;
-                } else {
+            pk->muutettu = 0;
+            if (!i && card0zoom) {
+                // kortti 0 lentää; piirrä aina selkä
+                if (pk->selka)
                     piirra_selka(pk->x, pk->y);
-                    AUTO_RECT();
-                    COMMIT_RECT();
-                }
-            } else if (sailotty_kortti && sailotty_kortti == i
-                    && kortti_sailotty && pv->x == pk->x && pv->y == pk->y) {
-                if (sailotty_miny) {
-                    short yo = sailotty_miny - pk->y;
-                    piirra_kuva_rajaa_y(pk->x, sailotty_miny, KORTTI_L,
-                                KORTTI_K - yo, KORTTI_K,
-                                kortti_cache + yo * KORTTI_L / PPB,
-                                sailotty_maxy);
-                } else {
-                    piirra_kuva_rajaa_y(pk->x, pk->y, KORTTI_L, KORTTI_K,
-                                KORTTI_K, kortti_cache, sailotty_maxy);
-                }
+                else
+                    piirra_kortti(pk->x, pk->y, pk->kortti);
+                AUTO_RECT();
             } else if (pk->nakyva && pv->nakyva
                     && (pk->x != pv->x || pk->y != pv->y)) {
                 if (pk->selka)
@@ -223,7 +253,6 @@ void paivita_kortit(void) {
                 else
                     siirra_kortti(pv->x, pv->y, pk->x, pk->y, pk->kortti);
                 AUTO_RECT();
-                COMMIT_RECT();
             } else if (pk->nakyva) {
                 if (pk->selka)
                     piirra_selka(pk->x, pk->y);
@@ -231,19 +260,16 @@ void paivita_kortit(void) {
                     piirra_kortti(pk->x, pk->y, pk->kortti);
                 tx1 = pk->x, ty1 = pk->y;
                 tx2 = tx1 + KORTTI_L, ty2 = ty1 + KORTTI_K;
-                COMMIT_RECT();
             } else if (pv->nakyva) {
                 pyyhi_kortti(pv->x, pv->y);
                 tx1 = pv->x, ty1 = pv->y;
                 tx2 = tx1 + KORTTI_L, ty2 = ty1 + KORTTI_K;
-                COMMIT_RECT();
+            } else {
+                *pv = *pk;
+                continue;
             }
-            if (sailotty_kortti && sailotty_kortti == i && (!kortti_sailotty
-                        || pv->x != pk->x || pv->y != pk->y)) {
-                sailyta_kuva(pk->x, pk->y, KORTTI_L, KORTTI_K, kortti_cache);
-                kortti_sailotty = 1;
-            }
-            fast_memcpy(pv, pk, sizeof(struct Pelikortti));
+            COMMIT_RECT();
+            *pv = *pk;
         }
     }
 
@@ -272,7 +298,7 @@ void aanitesti(void) {
         puts(english ? "Playing... (press ESC to stop)"
                      : "Toistetaan (ESC lopettaa)...");
         anim = 0;
-        while (!napit.lopeta && toistaa_aanta()) {
+        while (!napit_kaikki.lopeta && toistaa_aanta()) {
             lue_napit();
             paivita_soitto();
             tahti();
@@ -291,75 +317,88 @@ void aloita_peli(int saldo) {
     voitot = 0;
     voitto = 0;
     srand(time(NULL));
-    present_hand = rand() % KASI_LKM;
+    demo_hand = rand() % kasi_lkm;
     alusta_tila(T_ESIT0);
     valot_efekti();
 }
 
-void keraa_kortit(enum Pelitila seuraava) {
+static int keraa_kortit(void) {
     if (tuplaus) {
-        if (ANIM_LE(16)) {
-            pelikortit[3].x = lerp(POYTA_X(3), PAKKA_X, 0, anim, 16);
-            pelikortit[3].y = lerp(TUPLAUS_Y, PAKKA_Y, 0, anim, 16);
-            pelikortit[3].selka = 1;
-            pelikortit[3].nakyva = anim < 16;
-            PAIVITA_KORTTI(3);
-        }
-        if (ANIM_EQ(16)) {
+        // tuplatessa vain tuplauskortti (3) kerätään
+        if (!ANIM_LE(16)) {
             pelikortit[0].x = PAKKA_X;
             pelikortit[0].y = PAKKA_Y;
-            alusta_tila(seuraava);
+            pelikortit[TUPLAUS_KORTTI_I].nakyva = 0;
+            PAIVITA_KORTTI(0);
+            PAIVITA_KORTTI(TUPLAUS_KORTTI_I);
+            return 1;
         }
+        pelikortit[TUPLAUS_KORTTI_I].x =
+                    lerp(POYTA_X(TUPLAUS_KORTTI_I), PAKKA_X, 0, anim, 16);
+        pelikortit[TUPLAUS_KORTTI_I].y =
+                    lerp(TUPLAUS_Y, PAKKA_Y, 0, anim, 16);
+        pelikortit[TUPLAUS_KORTTI_I].selka = 1;
+        pelikortit[TUPLAUS_KORTTI_I].nakyva = anim < 16;
+        PAIVITA_KORTTI(TUPLAUS_KORTTI_I);
         PAIVITA_KORTTI(0);
-        return;
+        return 0;
     }
 
     if (ANIM_LE(15)) {
+        // pakka siirtyy alaoikealle
         int x = pelikortit[0].x;
-        if (x >= POYTA_X(1) && x < POYTA_X(1) + KORTTI_L)
+        // piirrä kortit 1-3 uudelleen jos pakka liikkuu niiden päältä
+        if (POYTA_X(1) <= x && x < POYTA_X(1) + KORTTI_L)
             PAIVITA_KORTTI(1);
-        if (x >= POYTA_X(2) && x < POYTA_X(2) + KORTTI_L)
+        if (POYTA_X(2) <= x && x < POYTA_X(2) + KORTTI_L)
             PAIVITA_KORTTI(2);
-        if (x >= POYTA_X(3) && x < POYTA_X(3) + KORTTI_L)
+        if (POYTA_X(3) <= x && x < POYTA_X(3) + KORTTI_L)
             PAIVITA_KORTTI(3);
         pelikortit[0].x = lerp(PAKKA_X, POYTA_X(3), 0, anim, 15);
         pelikortit[0].y = lerp(PAKKA_Y, KERAYS_Y, 0, anim, 15);
         PAIVITA_KORTTI(0);
     }
     if (ANIM_EQ(16)) {
+        // varmista että pakka on oikeassa paikassa
         pelikortit[0].x = POYTA_X(3);
         pelikortit[0].y = KERAYS_Y;
         PAIVITA_KORTTI(0);
     }
     if (10 <= anim && ANIM_LE(20)) {
+        // keskimmäinen kortti (#3) liikkuu pakan kohdalle
         pelikortit[3].y = lerp(POYTA_Y, KERAYS_Y, 10, anim, 20);
         PAIVITA_KORTTI(3);
     }
     if (20 <= anim && ANIM_LE(30)) {
+        // kortti #2 liikkuu pakan kohdalle
         if (!pelikortit[2].nakyva) anim += 10;
         pelikortit[2].x = lerp(POYTA_X(2), POYTA_X(3), 20, anim, 30);
         pelikortit[2].y = lerp(POYTA_Y, KERAYS_Y, 20, anim, 30);
         PAIVITA_KORTTI(2);
     }
     if (30 <= anim && ANIM_LE(40)) {
+        // kortti #4 liikkuu pakan kohdalle
         if (!pelikortit[4].nakyva) anim += 10;
         pelikortit[4].x = lerp(POYTA_X(4), POYTA_X(3), 30, anim, 40);
         pelikortit[4].y = lerp(POYTA_Y, KERAYS_Y, 30, anim, 40);
         PAIVITA_KORTTI(4);
     }
     if (40 <= anim && ANIM_LE(50)) {
+        // kortti #1 liikkuu pakan kohdalle
         if (!pelikortit[1].nakyva) anim += 10;
         pelikortit[1].x = lerp(POYTA_X(1), POYTA_X(3), 40, anim, 50);
         pelikortit[1].y = lerp(POYTA_Y, KERAYS_Y, 40, anim, 50);
         PAIVITA_KORTTI(1);
     }
     if (50 <= anim && ANIM_LE(60)) {
+        // kortti #5 liikkuu pakan kohdalle
         if (!pelikortit[5].nakyva) anim += 10;
         pelikortit[5].x = lerp(POYTA_X(5), POYTA_X(3), 50, anim, 60);
         pelikortit[5].y = lerp(POYTA_Y, KERAYS_Y, 50, anim, 60);
         PAIVITA_KORTTI(5);
     }
     if (ANIM_EQ(60)) {
+        // piilota kortit
         int i;
         for (i = 1; i <= 5; ++i)
             pelikortit[i].nakyva = 0;
@@ -368,6 +407,7 @@ void keraa_kortit(enum Pelitila seuraava) {
     if (anim <= 60 && anim % 10 <= tickskip)
         toista_aani(AANI_KORTTI_LIUKUU);
     if (60 <= anim && ANIM_LE(75)) {
+        // siirrä pakka takaisin ylävasemmalle
         pelikortit[0].x = lerp(POYTA_X(3), PAKKA_X, 60, anim, 75);
         pelikortit[0].y = lerp(KERAYS_Y, PAKKA_Y, 60, anim, 75);
         PAIVITA_KORTTI(0);
@@ -375,20 +415,23 @@ void keraa_kortit(enum Pelitila seuraava) {
     if (ANIM_EQ(75)) {
         pelikortit[0].x = PAKKA_X;
         pelikortit[0].y = PAKKA_Y;
-        alusta_tila(seuraava);
         PAIVITA_KORTTI(0);
+        return 1;
     }
+    return 0;
 }
 
-int shuffle_i = 0;
-signed char p0 = 0, p1 = 0, p2 = 0;
-signed char p0d = 0, p1d = 0, p2d = 0;
-void pakan_sekoitus(int seuraava) {
+static int shuffle_i = 0;
+static signed char p0 = 0, p1 = 0, p2 = 0;
+static signed char p0d = 0, p1d = 0, p2d = 0;
+static int pakan_sekoitus(void) {
     char i, maxv = MIN(tickskip + 1, 4);
     signed char pmin, pmax;
+    // sekoita kortteja
     for (i = 0; i < 2 * (tickskip + 1); ++i)
         if (shuffle_i) sekoita_pakka(shuffle_i--);
 
+    // liikuta pakkakopioita
     pmin = pmax = p0;
     if (p1 < pmin) pmin = p1;
     if (p1 > pmax) pmax = p1;
@@ -423,17 +466,22 @@ void pakan_sekoitus(int seuraava) {
     paivita_alue(PAKKA_X + 8 * pmin, PAKKA_Y,
                 KORTTI_L + 8 * (pmax - pmin + 1), KORTTI_K);
 
+    // ala siirtämään kopioita #0, #1, #2 tietyissä kohtaa
     if (ANIM_EQ(1) || ANIM_EQ(16) || ANIM_EQ(31)) p0d = 1;
     if (ANIM_EQ(6) || ANIM_EQ(21) || ANIM_EQ(36)) p1d = 1;
     if (ANIM_EQ(11) || ANIM_EQ(26) || ANIM_EQ(41)) p2d = 1;
     
     if (anim >= 66 && p0 == 0 && p1 == 0 && p2 == 0) {
-        assert(shuffle_i == 0),
-        alusta_tila(seuraava), paivita_kaikki_kortit();
+        // sekoita loppuun ja siirry seuraavaan tilaan
+        while (shuffle_i) sekoita_pakka(shuffle_i--);
+        paivita_kaikki_kortit();
+        return 1;
     }
+    return 0;
 }
 
-kortti_t alusta_yksi_kortti(int i, int selka, kortti_t kortti) {
+// alusta kortti i pakan (kortti #0) kohdalle
+static kortti_t alusta_yksi_kortti(int i, int selka, kortti_t kortti) {
     RANGE_CHECK(i, 1, 6);
     pelikortit[i].x = pelikortit[0].x;
     pelikortit[i].y = pelikortit[0].y;
@@ -445,16 +493,18 @@ kortti_t alusta_yksi_kortti(int i, int selka, kortti_t kortti) {
     return kortti;
 }
 
-kortti_t jaa_yksi_kortti(int i, int selka) {
+// jaa pakasta kortti i pakan (kortti #0) kohdalle
+static kortti_t jaa_yksi_kortti(int i, int selka) {
     kortti_t kortti = jaa_kortti();
     return alusta_yksi_kortti(i, selka, kortti);
 }
 
-short jaa_i = 0;
-short jaa_ctr = 0;
-void jaa_kortit(void) {
+static short jaa_i = 0;
+static short jaa_ctr = 0;
+static void jaa_kortit(void) {
     short i, x, landed = 1;
     for (i = 1; i <= 5; ++i) {
+        // pudota kortteja
         if (pelikortit[i].nakyva && pelikortit[i].y < POYTA_Y) {
             pelikortit[i].y = MIN(pelikortit[i].y + SPEED_MUL(16), POYTA_Y);
             PAIVITA_KORTTI(i);
@@ -465,14 +515,17 @@ void jaa_kortit(void) {
     if (jaa_i >= 6) {
         if (pelikortit[0].x == PAKKA_X) {
             if (landed) {
+                // kaikki kortit jaettu
                 alusta_tila(T_VALITSE);
                 card0zoom = 0;
             }
             return;
         }
+        // siirrä pakka takaisin vasemmalle
         pelikortit[0].x = x = MAX(pelikortit[0].x - SPEED_MUL(40), PAKKA_X);
         PAIVITA_KORTTI(0);
         for (i = 1; i <= 5; ++i) {
+            // paljasta kortteja sitä mukaa kun pakka liikkuu
             if (pelikortit[i].selka && x < POYTA_X(6 - i)) {
                 pelikortit[i].selka = 0;
                 PAIVITA_KORTTI(i);
@@ -483,6 +536,7 @@ void jaa_kortit(void) {
     }
 
     if (jaa_ctr) {
+        // pitääkö jakaa seuraava kortti?
         jaa_ctr -= (tickskip + 1);
         if (jaa_ctr >= 6 - tickskip && jaa_ctr <= 6) {
             jaa_yksi_kortti(jaa_i, 1);
@@ -493,6 +547,7 @@ void jaa_kortit(void) {
             ++jaa_i;
         }
     } else {
+        // pakkaa oikealle
         int x2 = POYTA_X(jaa_i);
         pelikortit[0].x = x = MIN(pelikortit[0].x + SPEED_MUL(16), x2);
         if (x == x2)
@@ -501,56 +556,44 @@ void jaa_kortit(void) {
     PAIVITA_KORTTI(0);
 }
 
-void jaa_tuplaus_kortti(void) {
+static void jaa_tuplaus_kortti(void) {
     if (!jaa_i) {
         ++jaa_i;
         alusta_yksi_kortti(TUPLAUS_KORTTI_I, 1, 0);
     }
     if (ANIM_LE(16)) {
+        // siirrä tuplauskortti oikealle paikalle
         pelikortit[TUPLAUS_KORTTI_I].x = lerp(
                 PAKKA_X, POYTA_X(TUPLAUS_KORTTI_I), 0, anim, 16);
         pelikortit[TUPLAUS_KORTTI_I].y = lerp(
                 PAKKA_Y, TUPLAUS_Y, 0, anim, 16);
         PAIVITA_KORTTI(0);
         PAIVITA_KORTTI(TUPLAUS_KORTTI_I);
-    }
-    if (ANIM_EQ(16))
+    } else
         alusta_tila(T_TUPLAUS);
 }
 
-void update_voitto_speed(int offset, char slow) {
+static void update_voitto_hitaus(int offset, char slow) {
     offset *= tickskip + 1;
-    if (slow) offset >>= 2;
-    if (offset > 400)
-        voitto_speed = 2, voitto_speed_mul = 32;
-    else if (offset > 200)
-        voitto_speed = 2, voitto_speed_mul = 16;
-    else if (offset > 100)
-        voitto_speed = 2, voitto_speed_mul = 8;
-    else if (offset > 50)
-        voitto_speed = 2, voitto_speed_mul = 4;
-    else if (offset > 25)
-        voitto_speed = 2, voitto_speed_mul = 1;
-    else if (offset > 15)
-        voitto_speed = 4, voitto_speed_mul = 1;
-    else if (offset > 10)
-        voitto_speed = 6, voitto_speed_mul = 1;
-    else if (offset > 5)
-        voitto_speed = 10, voitto_speed_mul = 1;
+    if (offset <= 10)
+        voitto_hitaus = 8;
+    else if (offset <= 20)
+        voitto_hitaus = 4;
     else
-        voitto_speed = 16, voitto_speed_mul = 1;
+        voitto_hitaus = 2;
+    if (slow) voitto_hitaus *= 2;
 }
 
-char valinnat[5] = { 0 };
-char pudotettavat = 0;
-char* valintavalot[5] = { &valot.valitse_1, &valot.valitse_2,
+static char valinnat[5] = { 0 };
+static char pudotettavat = 0;
+static char* valintavalot[5] = { &valot.valitse_1, &valot.valitse_2,
         &valot.valitse_3, &valot.valitse_4, &valot.valitse_5 };
-char valintanakyy[5] = { 0, 0, 0, 0, 0 };
-int valintoja = 0;
-int valintoja_nakyvissa = 0;
-signed char valintaajastin[5] = { 0, 0, 0, 0, 0 };
+static char valintanakyy[5] = { 0, 0, 0, 0, 0 };
+static int valintoja = 0;
+static int valintoja_nakyvissa = 0;
+static signed char valintaajastin[5] = { 0, 0, 0, 0, 0 };
 
-void arvioi_kasi(void) {
+static void arvioi_kasi(void) {
     fast_memset(valinnat, 0, sizeof(valinnat));
     pelikortit[0].x = PAKKA_X;
     pelikortit[0].y = PAKKA_Y;
@@ -563,7 +606,7 @@ void arvioi_kasi(void) {
         voitto = panos * (jokeri ?
             kadet[voitto_kasi].kerroin_jokeri : kadet[voitto_kasi].kerroin);
         if (voitto > paavoitto) voitto = paavoitto;
-        update_voitto_speed(voitto, 0);
+        update_voitto_hitaus(voitto, 0);
         alusta_tila(T_VOITTO);
     } else {
         voitto = 0;
@@ -571,7 +614,7 @@ void arvioi_kasi(void) {
     }
 }
 
-void pudota_kortit(void) {
+static void pudota_kortit(void) {
     int i;
 
     if (!jaa_ctr) {
@@ -596,15 +639,18 @@ void pudota_kortit(void) {
     PAIVITA_KORTTI(i);
 }
 
-int jaa_n = 1;
-void jaa_uudet_kortit(void) {
+static int jaa_n = 1;
+static void jaa_uudet_kortit(void) {
     int i, x, wait = 0;
 
     for (i = 1; i <= 5; ++i) {
+        // tarkista onko jaettuja putoavia kortteja
         if (pelikortit[i].nakyva && pelikortit[i].selka
                 && pelikortit[i].y < POYTA_Y) {
+            // pudota korttia
             pelikortit[i].y = MIN(pelikortit[i].y + SPEED_MUL(16), POYTA_Y);
             if (pelikortit[i].y == POYTA_Y) {
+                // paljasta
                 pelikortit[i].selka = 0;
                 toista_aani(AANI_UUSI_KORTTI_ASETTUU);
             } else
@@ -614,22 +660,34 @@ void jaa_uudet_kortit(void) {
     }
 
     if (wait) {
+        // älä tee mitään muuta jos kortti putoamassa
         PAIVITA_KORTTI(0);
         return;
     }
 
+    // onko kortteja jaettu jo?
     if (jaa_ctr) {
         if (!pudotettavat) {
+            // ei enää pudotettavia kortteja, ala pudottaa pakkaa
+            // viimeiselle kohdalle
             pelikortit[0].y = MIN(pelikortit[0].y + SPEED_MUL(8), POYTA_Y);
             if (pelikortit[0].y == POYTA_Y) {
-                jaa_yksi_kortti(jaa_i, 0);
+                short x = pelikortit[0].x, y = pelikortit[0].y;
+                // siirry koputusvaiheeseen
+                kortti_t k = jaa_yksi_kortti(jaa_i, 0);
+                // tallenna kuva kortista
+                pyyhi_kortti(x, y);
+                piirra_kortti(x, y, k);
+                sailyta_kuva(x, y, KORTTI_L, KORTTI_K, kortti_cache);
                 alusta_tila(T_UJAKO3);
             }
             PAIVITA_KORTTI(0);
             return;
         }
+        // onko aika jakaa seuraava kortti?
         jaa_ctr -= SPEED_MUL(1);
         if (jaa_ctr <= 0) {
+            // jaa kortti pudotettavaksi
             jaa_ctr = 0;
             jaa_yksi_kortti(jaa_i, 1);
             toista_aani(AANI_KORTTI_JAETAAN);
@@ -640,6 +698,7 @@ void jaa_uudet_kortit(void) {
     } else {
         int x2;
         if (jaa_n) {
+            // etsi seuraava kortti joka jakaa
             while (!(pudotettavat & 1)) {
                 ++jaa_i;
                 pudotettavat >>= 1;
@@ -658,7 +717,7 @@ void jaa_uudet_kortit(void) {
     PAIVITA_KORTTI(0);
 }
 
-void valitse_kortti(int i) {
+static void valitse_kortti(int i) {
     --i;
     if (valinnat[i] ^= 1) {
         VALO_PAALLE(*valintavalot[i]);
@@ -678,8 +737,8 @@ void valitse_kortti(int i) {
     toista_aani(AANI_VALINTA);
 }
 
-char valintanopeus = 1;
-void paivita_valinnat(void) {
+static char valintanopeus = 1;
+static void paivita_valinnat(void) {
     char i, wn;
     for (i = 0; i < 5; ++i) {
         if (valintanakyy[i] && (!valinnat[i] || valintaajastin[i] != 0)) {
@@ -735,8 +794,8 @@ void piirra_alapalkki_voitto(char paivita) {
             piirra_teksti_oikea(160, y + 10, 11, 0, "YOU WON", 0);
         else
             piirra_teksti(160, y + 10, 11, 0, "VOITIT", 0);
-        piirra_teksti(424, y + 10, 11, 0,
-                    english ? "WANT TO DOUBLE?" : "TUPLAATKO", 0);
+        piirra_teksti( 424, y + 10, 11, 0,
+                    english ? "DOUBLE" : "TUPLAATKO", 0);
         piirra_kuva_maski(256, y + 8, 8, 16, G_tulosv, G_tulosv_M);
         piirra_kuva_maski(376, y + 8, 8, 16, G_tuloso, G_tuloso_M);
         break;
@@ -746,7 +805,7 @@ void piirra_alapalkki_voitto(char paivita) {
     case T_TUPLAEI:
     case T_TUPLAUS:
         piirra_teksti(424, y + 10, 11, 0,
-                english ? "WANT TO DOUBLE?" : "TUPLAATKO", 0);
+                english ? "DOUBLE" : "TUPLAATKO", 0);
     case T_TUPLA4:
         piirra_teksti(160, y + 10, 11, 0, english ? "BET" : "PANOS", 0);
         piirra_kuva_maski(256, y + 8, 8, 16, G_tulosv, G_tulosv_M);
@@ -758,57 +817,26 @@ void piirra_alapalkki_voitto(char paivita) {
         paivita_alue(0, y, GAREA_WIDTH, 32);
 }
 
-#define TUPLAUS_WIDTH 240
-
-int tuplaus_banner_x = 0;
-void paivita_tuplaus_alapalkki(void) {
-    const int S = TUPLAUS_WIDTH / PPB;
-    const int L = TUPLAUS_WIDTH / PPB * 16;
-    const int y = ALAPALKKI_Y + 8;
-    const unsigned char *p0, *p1, *p2, *p3, *p0a, *p0b;
-    unsigned char *d0, *d1, *d2, *d3;
-    unsigned short s0 = 0, s1 = 0, s2 = 0, s3 = 0;
-    int sx = tuplaus_banner_x, ox, oy;
-    int xb = sx >> 3, xo = sx & 7, xs = 8 - xo;
-    int i, j;
-
-    for (i = 0; i < 16; ++i) {
-        ox = xb + S * i;
-        oy = ((y + i) * STRIDE + 416 / PPB) - 1;
-
-        p0 = tuplaus_viesti + ox;
-        p1 = tuplaus_viesti + ox + L;
-        p2 = tuplaus_viesti + ox + L * 2;
-        p3 = tuplaus_viesti + ox + L * 3;
-        p0b = tuplaus_viesti + S * (i + 1);
-        d0 = taso0 + oy, d1 = taso1 + oy, d2 = taso2 + oy, d3 = taso3 + oy;
-
-        for (j = 0; j <= 16; ++j) {
-            s0 <<= xs, s1 <<= xs, s2 <<= xs, s3 <<= xs;
-            s0 |= *p0++; s1 |= *p1++; s2 |= *p2++; s3 |= *p3++;
-            if (p0 == p0b) {
-                p0 -= TUPLAUS_WIDTH / PPB;
-                p1 -= TUPLAUS_WIDTH / PPB;
-                p2 -= TUPLAUS_WIDTH / PPB;
-                p3 -= TUPLAUS_WIDTH / PPB;
-            }
-            s0 <<= xo, s1 <<= xo, s2 <<= xo, s3 <<= xo;
-            if (j) {
-                *d0++ = (s0 >> 8);
-                *d1++ = (s1 >> 8);
-                *d2++ = (s2 >> 8);
-                *d3++ = (s3 >> 8);
-            } else {
-                ++d0, ++d1, ++d2, ++d3;
-            }
-        }
-    }
-
-    tuplaus_banner_x = (tuplaus_banner_x + SPEED_MUL(1)) % TUPLAUS_WIDTH;
-    paivita_alue(416, y, 128, 16);
+static void lopeta(void)  {
+    pelit += voitot + voitto;
+    jatka = 0;
 }
 
-void draw_konkka_line(short y) {
+static long laske_kohti(long nyt, long tavoite) {
+    long erotus = tavoite - nyt;
+    if (erotus >= 500)
+        return 100;
+    else if (erotus >= 200)
+        return 10;
+    else if (erotus >= 50)
+        return 5;
+    else if (erotus > 0)
+        return 1;
+    else
+        return 0;
+}
+
+static void draw_konkka_line(short y) {
     if (y < 0 || y >= GAREA_HEIGHT) return;
     if (y < 160 || y >= 192) {
         fast_memset(taso0 + STRIDE * y, 0, STRIDE);
@@ -828,7 +856,7 @@ void draw_konkka_line(short y) {
     paivita_alue(0, y, GAREA_WIDTH, 1);
 }
 
-void lopeta_esittely(void) {
+static void lopeta_esittely(void) {
     char i;
     PYSAYTA_AANET();
     valmistele_ruutu_peli();
@@ -846,54 +874,55 @@ void lopeta_esittely(void) {
     skip_input_read = 1;
 }
 
-void esittely1(void) {
+static void esittely_pudota_korttia(int i, short x, short oy, short ny) {
+    short py, ty, kh;
+    if (ny <= -KORTTI_K && oy <= -KORTTI_K)
+        return;
+    if (ny < 0)
+        py = 0, ty = -ny;
+    else
+        py = ny, ty = 0;
+    if (ny > GAREA_HEIGHT)
+        ny = GAREA_HEIGHT;
+    if (ny >= 0) {
+        short fy = oy;
+        if (oy < 0) fy = 0;
+        piirra_suorakulmio(x, fy, KORTTI_L, ny - oy, 0);
+    }
+    piirra_kuva_rajaa_y(x, py, KORTTI_L, KORTTI_K - ty,
+        KORTTI_K, kortti_caches[i] + ty * (KORTTI_L / PPB),
+        GAREA_HEIGHT);
+    py = MAX(oy, 0);
+    kh = KORTTI_K - ty + (ny - oy);
+    kh = MIN(kh, GAREA_HEIGHT - py);
+    if (kh > 0)
+        paivita_alue(x, py, KORTTI_L, kh);
+}
+
+static void esittely1(void) {
     char i, any_card_visible = 0, stop;
-    if (napit.mika_tahansa) {
+    if (napit_kaikki.mika_tahansa) {
         lopeta_esittely();
         return;
     }
-    present_y += SPEED_MUL(1);
-    stop = present_y >= 400 && present_y < 400 + 300;
-    if (stop)
+    demo_y += SPEED_MUL(1);
+    stop = demo_y >= 400 && demo_y < 400 + 300;
+    if (stop) return;
+
+    for (i = 1; i <= 5; ++i) {
+        short x, oy, ny;
+        if (!pelikortit[i].nakyva) continue;
+        x = pelikortit[i].x, oy = pelikortit[i].y;
+        pelikortit[i].y = ny = oy + SPEED_MUL(1);
+
+        // siirrä korttia alaspäin
+        esittely_pudota_korttia(i, x, oy, ny);
+        if (ny == GAREA_HEIGHT)
+            pelikortit[i].nakyva = 0;
         any_card_visible = 1;
-    else {
-        for (i = 1; i <= 5; ++i) {
-            if (pelikortit[i].nakyva) {
-                short x = pelikortit[i].x, oy = pelikortit[i].y, ny;
-                any_card_visible = 1;
-                pelikortit[i].y = ny = oy + SPEED_MUL(1);
-                if (ny > -KORTTI_K || oy > -KORTTI_K) {
-                    short py, ty, kh;
-                    if (ny < 0)
-                        py = 0, ty = -ny;
-                    else
-                        py = ny, ty = 0;
-                    if (ny > GAREA_HEIGHT)
-                        ny = GAREA_HEIGHT;
-                    if (ny >= 0) {
-                        short fy = oy;
-                        if (oy < 0) fy = 0;
-                        piirra_suorakulmio(x, fy, KORTTI_L, ny - oy, 0);
-                    }
-                    piirra_kuva_rajaa_y(x, py, KORTTI_L, KORTTI_K - ty,
-                        KORTTI_K, kortti_caches[i] + ty * (KORTTI_L / PPB),
-                        GAREA_HEIGHT);
-                    py = oy;
-                    if (py < 0)
-                        py = 0;
-                    kh = KORTTI_K - ty + (ny - oy);
-                    if (py + kh > GAREA_HEIGHT)
-                        kh = GAREA_HEIGHT - py;
-                    if (kh > 0)
-                        paivita_alue(x, py, KORTTI_L, kh);
-                }
-                if (ny == GAREA_HEIGHT) {
-                    pelikortit[i].nakyva = 0;
-                }
-            }
-        }
     }
     if (!any_card_visible) {
+        // arvo uudet kortit
         alusta_pakka();
         for (i = 52; i > 0; --i)
             sekoita_pakka(i);
@@ -904,55 +933,30 @@ void esittely1(void) {
             piirra_kortti(0, 0, pelikortit[i].kortti);
             sailyta_kuva(0, 0, KORTTI_L, KORTTI_K, kortti_caches[i]);
         }
-        piirra_suorakulmio(0, 0, KORTTI_L, KORTTI_K, 0);
-        present_y = 0;
+        pyyhi_kortti(0, 0);
+        demo_y = 0;
         if (!inactive--)
             alusta_tila(T_ESIT2);
     }
 }
 
-void esittely2(void) {
+static void esittely2(void) {
     char i, any_card_visible = 0, stop;
-    if (napit.mika_tahansa) {
+    if (napit_kaikki.mika_tahansa) {
         lopeta_esittely();
         return;
     }
-    if (present_y < PAKKA_Y) {
-        short oy = present_y, ny;
-        present_y += SPEED_MUL(1);
-        if (present_y >= PAKKA_Y) {
-            present_y = PAKKA_Y;
+    if (demo_y < PAKKA_Y) {
+        short oy = demo_y, ny;
+        demo_y += SPEED_MUL(1);
+        if (demo_y >= PAKKA_Y) {
+            demo_y = PAKKA_Y;
         }
-        ny = present_y;
-        for (i = 1; i <= 5; ++i) {
-            if (pelikortit[i].nakyva) {
-                short x = pelikortit[i].x;
-                if (ny > -KORTTI_K || oy > -KORTTI_K) {
-                    short py, ty, kh;
-                    if (ny < 0)
-                        py = 0, ty = -ny;
-                    else
-                        py = ny, ty = 0;
-                    if (ny >= 0) {
-                        short fy = oy;
-                        if (oy < 0) fy = 0;
-                        piirra_suorakulmio(x, fy, KORTTI_L, ny - oy, 0);
-                    }
-                    piirra_kuva_rajaa_y(x, py, KORTTI_L, KORTTI_K - ty,
-                        KORTTI_K, kortti_caches[i] + ty * (KORTTI_L / PPB),
-                        GAREA_HEIGHT);
-                    py = oy;
-                    if (py < 0)
-                        py = 0;
-                    kh = KORTTI_K - ty + (ny - oy);
-                    if (py + kh > GAREA_HEIGHT)
-                        kh = GAREA_HEIGHT - py;
-                    if (kh > 0)
-                        paivita_alue(x, py, KORTTI_L, kh);
-                }
-            }
-        }
-        if (present_y == PAKKA_Y) {
+        ny = demo_y;
+        for (i = 1; i <= 5; ++i)
+            if (pelikortit[i].nakyva)
+                esittely_pudota_korttia(i, pelikortit[i].x, oy, ny);
+        if (demo_y == PAKKA_Y) {
             inactive = 720;
             pelikortit[0].x = -KORTTI_L * 2;
             piirra_selka(0, CARDAREA_HEIGHT - KORTTI_K);
@@ -960,89 +964,159 @@ void esittely2(void) {
                                 KORTTI_L, KORTTI_K, kortti_cache);
             piirra_suorakulmio(0, CARDAREA_HEIGHT - KORTTI_K,
                                 KORTTI_L, KORTTI_K, 0);
-            present_panos = 0;
+            demo_panos = 0;
         }
     }
-    if (present_y == PAKKA_Y) {
-        if (!inactive) {
-            short ox = pelikortit[0].x, x = ox, x1, x2, w;
-            if (x >= GAREA_WIDTH * 2 || tickskip >= 4) {
-                present_hand = (present_hand + 1) % KASI_LKM;
-                alusta_tila(rand() & 1 ? T_ESIT0 : T_ESIT1);
-                return;
-            }
-            x += SPEED_MUL(8);
-            pelikortit[0].x = x;
-            if (x > GAREA_WIDTH) {
-                return;
-            }
-            w = KORTTI_L;
-            if (x < 0)
-                x1 = 0, x2 = -x, w += x;
+    if (demo_y != PAKKA_Y) return;
+
+    if (!inactive) {
+        // kerää kortit
+        short ox = pelikortit[0].x, x = ox, x1, x2, w;
+        if (x >= GAREA_WIDTH * 2 || tickskip >= 4) {
+            demo_hand = (demo_hand + 1) % kasi_lkm;
+            alusta_tila(rand() & 1 ? T_ESIT0 : T_ESIT1);
+            return;
+        }
+        // pakka liikkuu oikealle
+        x += SPEED_MUL(8);
+        pelikortit[0].x = x;
+        if (x > GAREA_WIDTH) {
+            return;
+        }
+        w = KORTTI_L;
+        if (x < 0)
+            x1 = 0, x2 = -x, w += x;
+        else
+            x1 = x, x2 = 0;
+        if (x + w > GAREA_WIDTH)
+            w = GAREA_WIDTH - x;
+        if (ox >= 0) {
+            piirra_suorakulmio(ox, PAKKA_Y, x - ox, KORTTI_K, 0);
+        }
+        if (w > 0) {
+            piirra_kuva_rajaa(x1, PAKKA_Y, w, KORTTI_K,
+                        x2, 0, KORTTI_L, KORTTI_K,
+                        kortti_cache);
+            if (ox >= 0)
+                paivita_alue(ox, PAKKA_Y, w + (x - ox), KORTTI_K);
             else
-                x1 = x, x2 = 0;
-            if (x + w > GAREA_WIDTH)
-                w = GAREA_WIDTH - x;
-            if (ox >= 0) {
-                piirra_suorakulmio(ox, PAKKA_Y, x - ox, KORTTI_K, 0);
-            }
-            if (w > 0) {
-                piirra_kuva_rajaa(x1, PAKKA_Y, w, KORTTI_K,
-                            x2, 0, KORTTI_L, KORTTI_K,
-                            kortti_cache);
-                if (ox >= 0)
-                    paivita_alue(ox, PAKKA_Y, w + (x - ox), KORTTI_K);
+                paivita_alue(0, PAKKA_Y, w, KORTTI_K);
+        } else if (x >= GAREA_WIDTH) {
+            paivita_alue(ox, PAKKA_Y, x - ox, KORTTI_K);
+        }
+
+    } else {
+        if (inactive >= 660 && inactive <= 660 + tickskip) {
+            // esittele panos
+            piirra_teksti_keski(540, 260, 14, 1,
+                        english ? "BET" : "PANOS", 1);
+            piirra_teksti_oikea(560, 300, 14, 0, "@", 1);
+        }
+        if (demo_panos < maksimipanos && inactive <= 660 + tickskip
+                && (inactive - 60) % 120 <= tickskip) {
+            // esittele voitot
+            short x = POYTA_X(1), y = PAKKA_Y + KORTTI_K + 64, kerroin;
+            ++demo_panos;
+            piirra_suorakulmio(500, 300, 40, 12, 0);
+            piirra_luku_oikea(540, 300, 14, 1, demo_panos, 1);
+            paivita_alue(x, y, 400, 12 * kasi_lkm);
+            for (i = 0; i < kasi_lkm; ++i) {
+                piirra_suorakulmio(x, y, 400, 12,
+                    i == demo_hand ? 2 : 0);
+                piirra_teksti(x, y, 14,
+                    i == demo_hand, kadet[i].nimi, 0);
+                piirra_teksti_oikea(x + 400, y, 14, 0, "@", 0);
+                kerroin = (jokeri_saatavilla &&
+                            demo_panos >= jokeri_minimipanos
+                            ? kadet[i].kerroin_jokeri 
+                            : kadet[i].kerroin);
+                if (kerroin)
+                    piirra_luku_oikea(x + 384, y, 14, 1, 
+                        demo_panos * kerroin, 0);
                 else
-                    paivita_alue(0, PAKKA_Y, w, KORTTI_K);
-            } else if (x >= GAREA_WIDTH) {
-                paivita_alue(ox, PAKKA_Y, x - ox, KORTTI_K);
+                    piirra_teksti_oikea(x + 384, y, 14, 1, "-", 0);
+                y += 12;
             }
-        } else {
-            if (inactive >= 660 && inactive <= 660 + tickskip) {
-                piirra_teksti_keski(540, 260, 14, 1,
-                            english ? "BET" : "PANOS", 1);
-                piirra_teksti_oikea(560, 300, 14, 0, "@", 1);
-            }
-            if (present_panos < maksimipanos && inactive <= 660 + tickskip
-                    && (inactive - 60) % 120 <= tickskip) {
-                short x = POYTA_X(1), y = PAKKA_Y + KORTTI_K + 64, kerroin;
-                ++present_panos;
-                piirra_suorakulmio(500, 300, 40, 12, 0);
-                piirra_luku_oikea(540, 300, 14, 1, present_panos, 1);
-                paivita_alue(x, y, 400, 12 * KASI_LKM);
-                for (i = 0; i < KASI_LKM; ++i) {
-                    piirra_suorakulmio(x, y, 400, 12,
-                        i == present_hand ? 2 : 0);
-                    piirra_teksti(x, y, 14,
-                        i == present_hand, kadet[i].nimi, 0);
-                    piirra_teksti_oikea(x + 400, y, 14, 0, "@", 0);
-                    kerroin = (jokeri_saatavilla &&
-                                present_panos >= jokeri_minimipanos
-                                ? kadet[i].kerroin_jokeri 
-                                : kadet[i].kerroin);
-                    if (kerroin)
-                        piirra_luku_oikea(x + 384, y, 14, 1, 
-                            present_panos * kerroin, 0);
-                    else
-                        piirra_teksti_oikea(x + 384, y, 14, 1, "-", 0);
-                    y += 12;
-                }
-            }
-            inactive -= SPEED_MUL(1);
-            if (inactive < 0)
-                inactive = 0;
-            if (!inactive) {
-                piirra_suorakulmio(0, PAKKA_Y + KORTTI_K + 64,
-                        GAREA_WIDTH, 128, 0);
-                paivita_alue(0, PAKKA_Y + KORTTI_K + 64,
-                        GAREA_WIDTH, 128);
-            }
+        }
+        inactive -= SPEED_MUL(1);
+        if (inactive < 0)
+            inactive = 0;
+        if (!inactive) {
+            // pyyhi panokset
+            piirra_suorakulmio(0, PAKKA_Y + KORTTI_K + 64,
+                    GAREA_WIDTH, 128, 0);
+            paivita_alue(0, PAKKA_Y + KORTTI_K + 64,
+                    GAREA_WIDTH, 128);
         }
     }
 }
 
-int u4x = 0, u4y = 0;
-long ufrac = 0;
+static int u4x = 0, u4y = 0;
+static long ufrac = 0;
+
+static void piirra_kasi_voitot(int kasi, short y, int vari) {
+    short kerroin = jokeri ? kadet[kasi].kerroin_jokeri : kadet[kasi].kerroin;
+    piirra_teksti(240, y, vari, 0, kadet[kasi].nimi, 0);
+    piirra_teksti(576, y, vari, 0, "@", 0);
+    if (kerroin)
+        piirra_luku_oikea(572, y, vari, 1, panos * kerroin, 0);
+    else
+        piirra_teksti_oikea(572, y, vari, 1, "-", 0);
+}
+
+static void piirra_kadet(char hohda_aina) {
+    short i, hohda = hohda_aina || (anim & 32), y = 48;
+    piirra_suorakulmio(240, 48, 352, kasi_lkm * 12, 0);
+    if (!hohda && voitto_kasi >= 0)
+        piirra_suorakulmio(240, y + 12 * voitto_kasi, 352, 12, 2);
+    for (i = 0; i < kasi_lkm; ++i) {
+        piirra_kasi_voitot(i, y, (hohda && voitto_kasi == i) ? 4 : 14);
+        y += 12;
+    }
+    paivita_alue(240, 48, 352, kasi_lkm * 12);
+}
+
+static void piirra_kadet_uudelleen(void) {
+    short i, hohda = anim & 32, y = 48, kerroin;
+    if (voitto_kasi < 0) return;
+    i = voitto_kasi;
+    y += 12 * i;
+    piirra_suorakulmio(240, y, 352, 12, !hohda ? 2 : 0);
+    piirra_kasi_voitot(i, y, hohda ? 4 : 14);
+    paivita_alue(240, y, 352, 12);
+}
+
+static void piilota_kadet(void) {
+    piirra_suorakulmio(240, 48, 352, kasi_lkm * 12, 0);
+    paivita_alue(240, 48, 352, kasi_lkm * 12);
+}
+
+static void vilkuta_voittokatta(void) {
+    short i, j, y;
+    int o, pstride = STRIDE - 352 / 8;
+    unsigned char *p1, *p2, *p3;
+    if (voitto_kasi < 0) return;
+    y = 48 + voitto_kasi * 12;
+    o = y * STRIDE + 240 / 8;
+    p1 = taso1 + o, p2 = taso2 + o, p3 = taso3 + o;
+    for (i = 0; i < 12; ++i) {
+        for (j = 0; j < 352 / 8; ++j) {
+            *p3++ = (*p3 ^ 0xFF) & *p2++;
+            *p1++ = *p1 ^ 0xFF;
+        }
+        p1 += pstride, p2 += pstride, p3 += pstride;
+    }
+    paivita_alue(240, y, 352, 12);
+}
+
+void lisaa_panos(unsigned panos) {
+    if (!lisarahat_ok || panos >= 10000) return;
+    lisarahat += panos;
+    pelit += panos;
+    paivita_ylapalkki();
+    if (!musan_toisto)
+        toista_aani(AANI_ALOITA);
+}
 
 void alusta_tila(enum Pelitila t) {
     switch (t) {
@@ -1053,17 +1127,13 @@ void alusta_tila(enum Pelitila t) {
             VALO_PAALLE(valot.voitot);
         if (!pelit && !voitot && !voitto) {
             alusta_tila(T_KONKKA);
-            toista_musiikki_oletus(MUSA_KONKKA);
             return;
         } else if (panos > pelit + voitot) {
             panos = pelit + voitot;
             paivita_ylapalkki();
-        }
-        else if (pelit + voitot > 9999999) {
-            if (english)
-                debug_abort("GET THE DEALER");
-            else
-                debug_abort("HAE PELINHOITAJA");
+        } else if (pelit + voitot > 999999) {
+            alusta_tila(T_HUOLTO);
+            return;
         }
         VALO_VILKKU(valot.jako, 1);
         VALO_VILKKU_ALUSTA();
@@ -1075,16 +1145,17 @@ void alusta_tila(enum Pelitila t) {
         oli_paavoitto = voitto * 2 >= paavoitto;
         voitto_disp = voitto;
         palswap = 0;
-        update_voitto_speed(voitto, oli_paavoitto);
+        update_voitto_hitaus(voitto, oli_paavoitto);
         if (tila == T_VOITTO)
             piirra_kadet(1);
     } break;
     case T_JAKO1: {
-        int i, j = 0;
+        int i;
+        // poista liila väri alapalkista
         if (alapalkki_fade)
             alapalkki_fade = 9;
         for (i = 1; i <= 5; ++i)
-            pelikortit[i].selka = 1, j |= pelikortit[i].nakyva;
+            pelikortit[i].selka = 1;
         pelikortit[0].x = PAKKA_X;
         pelikortit[0].y = PAKKA_Y;
         PYSAYTA_AANET();
@@ -1093,9 +1164,12 @@ void alusta_tila(enum Pelitila t) {
         card0zoom = 1;
     } break;
     case T_JAKO2: {
+        jokeri = jokeri_saatavilla && panos >= jokeri_minimipanos;
         tuplaus_ctr = 0;
         tuplaus = 0;
         card0zoom = 1;
+        // jokeri on aina pakassa viimeisenä (53.) korttina,
+        // jos ei sekoiteta sinne asti niin se ei päädy peliin
         shuffle_i = jokeri ? 52 : 51;
         p0 = p1 = p2 = p0d = p1d = p2d = 0;
         pelikortit[0].x = PAKKA_X;
@@ -1149,11 +1223,7 @@ void alusta_tila(enum Pelitila t) {
     case T_UJAKO3: {
         tuplaus = 0;
         card0zoom = 1;
-        sailotty_miny = POYTA_Y;
-        sailotty_maxy = POYTA_Y + 8;
-        kortti_sailotty = 0;
-        card_fall_speed = 4096 / (tickskip + 1);
-        sailotty_kortti = jaa_i;
+        koputus_anim = 0;
         toista_musiikki_oletus(MUSA_KOPUTUS);
         fast_memset(valinnat, 0, sizeof(valinnat));
     } break;
@@ -1162,6 +1232,7 @@ void alusta_tila(enum Pelitila t) {
         u4y = pelikortit[0].y;
         ufrac = 0;
         PYSAYTA_AANET();
+        toista_aani(AANI_KORTTI_LIUKUU);
     } break;
     case T_TUPLA1: {
         int i, j = 0;
@@ -1177,7 +1248,7 @@ void alusta_tila(enum Pelitila t) {
     } break;
     case T_TUPLA2: {
         voitto *= 2;
-        update_voitto_speed(voitto, 0);
+        update_voitto_hitaus(voitto, 0);
     } break;
     case T_TUPLA3: {
         card0zoom = 1;
@@ -1210,6 +1281,7 @@ void alusta_tila(enum Pelitila t) {
                 vj *= 2, ++vk;
             toista_musiikki(MUSA_TUPLAUS, 240 - vk * 24);
         }
+        musan_toisto = 1;
     } break;
     case T_TUPLAUS:
         card0zoom = 0;
@@ -1233,6 +1305,7 @@ void alusta_tila(enum Pelitila t) {
     } break;
     case T_TUPLAEI: {
         toista_musiikki_oletus(AANI_TUPLAUS_HAVITTY);
+        musan_toisto = 0;
         voitto = voitto_disp = 0;
         paivita_alapalkki();
         kaikki_valot_pois();
@@ -1251,7 +1324,7 @@ void alusta_tila(enum Pelitila t) {
     } break;
     case T_ESIT0: {
         char i, y, x;
-        const char *p = logokartta;
+        const unsigned char *p = logokartta;
         valmistele_ruutu_esittely();
         kortti_caches[1] = kortti_cache;
         kortti_caches[2] = kortti_cache1;
@@ -1273,11 +1346,16 @@ void alusta_tila(enum Pelitila t) {
         piirra_teksti_oikea(GAREA_WIDTH - 16, GAREA_HEIGHT - 32,
             15, 1, "ORIGINAL 1986 RAY", 0);
         piirra_teksti_oikea(GAREA_WIDTH - 16, GAREA_HEIGHT - 16,
-            15, 1, "DOS 2021 RISTIJÄTKÄ", 0);
+            15, 1, "DOS 2024 RISTIJÄTKÄ", 0);
         for (y = 0; y < 12; ++y) {
-            for (x = 0; x < 36; ++x) {
-                if (*p++ != ' ')
-                    piirra_suorakulmio(32 + x * 16, 80 + y * 16, 16, 16, 10);
+            for (x = 0; x < 36;) {
+                unsigned char c = *p++;
+                for (i = 0; i < 8; ++i) {
+                    if (c & 0x80)
+                        piirra_suorakulmio(32 + x * 16, 80 + y * 16, 16, 16, 10);
+                    c <<= 1;
+                    ++x;
+                }
             }
         }
         paivita_alue(0, 0, GAREA_WIDTH, GAREA_HEIGHT);
@@ -1286,7 +1364,7 @@ void alusta_tila(enum Pelitila t) {
     case T_ESIT1: {
         char i;
         valmistele_ruutu_esittely();
-        present_y = 0;
+        demo_y = 0;
         inactive = 1 + (rand() % 4);
         for (i = 1; i <= 5; ++i) {
             pelikortit[i].nakyva = 0;
@@ -1295,13 +1373,14 @@ void alusta_tila(enum Pelitila t) {
         }
     } break;
     case T_ESIT2: {
+        const kortti_t *esittelykortit = &kadet[demo_hand].esittely->kortit;
         char i;
         kortti_t k;
         valmistele_ruutu_esittely();
-        present_y = -KORTTI_K - 32;
+        demo_y = -KORTTI_K - 32;
         inactive = 1;
         for (i = 1; i <= 5; ++i) {
-            k = kadet_esittely[present_hand].kortit[i - 1];
+            k = esittelykortit[i - 1];
             if (k == K_SELKA) {
                 piirra_selka(0, 0);
             } else {
@@ -1314,10 +1393,30 @@ void alusta_tila(enum Pelitila t) {
     case T_KONKKA: {
         assert(!voitot && !voitto);
         jaa_i = 0;
+        toista_aani(AANI_PANOS1 + (panos % 5));
         kaikki_valot_pois();
-        piirra_suorakulmio(240, 160, 160, 32, 5);
-        piirra_teksti_keski(320, 170, 15, 1, "GAME OVER", 0);
-        paivita_alue(240, 160, 160, 32);
+        piirra_palkki_napit();
+        paivita_alue(0, GAREA_HEIGHT,
+                     PLANE_WIDTH, PLANE_HEIGHT - GAREA_HEIGHT);
+        vaihda_keltaiseen_palettiin();
+        if (!lisarahat_ok) {
+            alapalkki_fade = 0;
+            piirra_alapalkki();
+            piirra_teksti_keski(320, ALAPALKKI_Y + 10, 1, 0,
+                            english ? "GAME OVER" : "PEEAA", 0);
+        }
+    } break;
+    case T_HUOLTO: {
+        kaikki_valot_pois();
+        paivita_valot();
+        alapalkki_fade = 0;
+        piirra_alapalkki();
+        piirra_teksti_keski(320, ALAPALKKI_Y + 10, 1, 0,
+                          english ? "GET THE DEALER" : "HAE PELINHOITAJA", 0);
+        vaihda_punaiseen_palettiin();
+        toista_musiikki_oletus(MUSA_TUPLAUS);
+        musan_toisto = 1;
+        lisarahat_ok = 0;
     } break;
     }
     tila = t;
@@ -1325,10 +1424,10 @@ void alusta_tila(enum Pelitila t) {
     new_mode = 1;
 }
 
-void aja_peli_internal(void) {
+static void aja_peli_internal(void) {
     switch (tila) {
     case T_PANOS: {
-        if (napit.mika_tahansa)
+        if (napit_kaikki.mika_tahansa)
             inactive = 0;
         else
             inactive += SPEED_MUL(1);
@@ -1337,8 +1436,8 @@ void aja_peli_internal(void) {
             if (panos > pelit + voitot)
                 panos = 1;
             toista_aani(AANI_PANOS1 + ((panos - 1) % 5));
-            jokeri = jokeri_saatavilla && panos >= jokeri_minimipanos;
             paivita_ylapalkki();
+            jokeri = jokeri_saatavilla && panos >= jokeri_minimipanos;
             piirra_kadet(0);
             VALO_VILKKU(valot.jako, 1);
         }
@@ -1355,12 +1454,10 @@ void aja_peli_internal(void) {
             paivita_ylapalkki();
             paivita_alapalkki();
             alusta_pakka();
-            alusta_tila(pelikortit[3].nakyva ? T_JAKO1 : T_JAKO2);
+            alusta_tila(pelikortit[TUPLAUS_KORTTI_I].nakyva ? T_JAKO1 : T_JAKO2);
         }
-        if (voitot && napit.voitot) {
-            pelit += voitot + voitto;
-            jatka = 0;
-        }
+        if (voitot && napit.voitot)
+            lopeta();
         if (inactive >= 1800) {
             kaikki_valot_pois();
             valot_efekti();
@@ -1370,29 +1467,31 @@ void aja_peli_internal(void) {
         break;
     }
     case T_JAKO1: /* kerää kortit */
-        keraa_kortit(T_JAKO2);
+        if (keraa_kortit())
+            alusta_tila(T_JAKO2);
         break;
     case T_JAKO2: /* sekoita */
-        pakan_sekoitus(T_JAKO3);
+        if (pakan_sekoitus())
+            alusta_tila(T_JAKO3);
         break;
     case T_JAKO3: /* jaa kortit */
         jaa_kortit();
         break;
     case T_TUPLA1: /* kerää kortit */
-        keraa_kortit(T_TUPLA2);
+        if (keraa_kortit())
+            alusta_tila(T_TUPLA2);
         break;
     case T_TUPLA2: /* panos tuplataan */
-        if (voitto_disp < voitto && (anim % voitto_speed) <= tickskip) {
-            voitto_disp += voitto_speed_mul;
-            if (voitto_disp > voitto)
-                voitto_disp = voitto;
+        if (voitto_disp < voitto && (anim % voitto_hitaus) <= tickskip) {
+            voitto_disp += laske_kohti(voitto_disp, voitto);
             toista_aani(AANI_VOITONMAKSU);
             paivita_alapalkki_voitto();
         } else if (voitto_disp == voitto)
             alusta_tila(T_TUPLA3);
         break;
     case T_TUPLA3: /* sekoita */
-        pakan_sekoitus(T_TUPLA4);
+        if (pakan_sekoitus())
+            alusta_tila(T_TUPLA4);
         break;
     case T_TUPLA4: /* jaa kortti */
         jaa_tuplaus_kortti();
@@ -1444,22 +1543,35 @@ void aja_peli_internal(void) {
         jaa_uudet_kortit();
         break;
     case T_UJAKO3: { /* tinnitys jäävistyy */
-        int a = anim / 2, y = pelikortit[0].y;
-        static div_t ufrac_div;
-        ufrac += a * a + (anim >= 120 ? (anim - 120) << 7 : 1);
-        ufrac_div = div(ufrac, card_fall_speed);
-        pelikortit[0].y += ufrac_div.quot;
-        ufrac = ufrac_div.rem;
+        int i, a, y = pelikortit[0].y;
+        // laske pakan uusi paikka
+        for (i = 0; i <= tickskip; ++i) {
+            a = koputus_anim >> 1;
+            ufrac += a * a + (koputus_anim >= 120 ?
+                                (koputus_anim - 120) << 7 : 1);
+            pelikortit[0].y += ufrac >> 12;
+            ufrac &= 0xFFF;
+            ++koputus_anim;
+        }
         if (y != pelikortit[0].y) {
-            PAIVITA_KORTTI(jaa_i);
-            PAIVITA_KORTTI(0);
-            sailotty_miny = y;
-            sailotty_maxy = pelikortit[0].y + 8;
-            if (pelikortit[0].y >= GAREA_HEIGHT) {
-                kortti_sailotty = 0;
-                sailotty_miny = 0;
-                sailotty_kortti = 0;
-                sailotty_maxy = CARDAREA_HEIGHT;
+            // päivitä näyttöä
+            short x = pelikortit[0].x;
+            short y1 = pelikortit[0].y;
+            piirra_suorakulmio2(x, y, KORTTI_L, y1 - y, 0);
+            if (y < POYTA_Y + KORTTI_K) {
+                // piirrä alla olevaa korttia vähitellen
+                const struct Pelikortti *pk = &pelikortit[jaa_i];
+                short y2 = y1 + 8;
+                short yo = y - pk->y;
+                piirra_kuva_rajaa_y(pk->x, y, KORTTI_L, KORTTI_K - yo,
+                            KORTTI_K, kortti_cache + yo * KORTTI_L / PPB, y2);
+            }
+            piirra_selka(x, y1);
+            paivita_alue(x, y, KORTTI_L, y1 - y + KORTTI_K);
+            if (y1 >= GAREA_HEIGHT) {
+                // pakka on pudonnut ruudulta täysin
+                PAIVITA_KORTTI(jaa_i);
+                pelikortit_v[0] = pelikortit[0];
                 if (tickskip > 2) /* älä vedä UJAKO4:sta hitailla koneilla */
                     arvioi_kasi();
                 else
@@ -1513,10 +1625,8 @@ void aja_peli_internal(void) {
             paivita_palkki();
             PYSAYTA_AANET();
             alusta_tila(T_TUPLA1);
-        } else if (voitto_disp < voitto && (anim % voitto_speed) <= tickskip) {
-            voitto_disp += voitto_speed_mul;
-            if (voitto_disp > voitto)
-                voitto_disp = voitto;
+        } else if (voitto_disp < voitto && (anim % voitto_hitaus) <= tickskip) {
+            voitto_disp += laske_kohti(voitto_disp, voitto);
             toista_aani(AANI_VOITONMAKSU);
             paivita_alapalkki_voitto();
         } else if (voitto_disp == voitto && !musan_toisto) {
@@ -1539,8 +1649,8 @@ void aja_peli_internal(void) {
             alusta_tila(T_TUPLA1);
         }
         if (tila == T_TUPLAOK && !toistaa_aanta() && !musan_toisto) {
-            musan_toisto = 1;
             toista_musiikki(MUSA_VOITTO, 96 + tuplaus_ctr * 24);
+            musan_toisto = 1;
         }
         break;
     }
@@ -1552,7 +1662,7 @@ void aja_peli_internal(void) {
                 vaihda_liilaan_palettiin();
             palswap ^= 1;
         }
-        if (anim % voitto_speed > tickskip) return;
+        if (anim % voitto_hitaus > tickskip) return;
         if (!voitto) {
             if (alapalkki_fade)
                 alapalkki_fade = 9;
@@ -1571,10 +1681,9 @@ void aja_peli_internal(void) {
             piirra_kadet(0);
             alusta_tila(T_PANOS);
         } else {
-            short maxv = voitto_speed_mul;
-            if (maxv > voitto) maxv = voitto;
-            voitot += maxv;
-            voitto -= maxv;
+            short kasvatus = laske_kohti(voitot, voitot + voitto);
+            voitot += kasvatus;
+            voitto -= kasvatus;
             voitto_disp = voitto;
             toista_aani(AANI_VOITONMAKSU);
             paivita_ylapalkki_voitot();
@@ -1582,23 +1691,16 @@ void aja_peli_internal(void) {
         }
         break;
     }
-    case T_KONKKA: {
-        short i, y;
-        if (anim >= 300)
-            jatka = 0;
-        if (jaa_i < GAREA_HEIGHT / 2) {
-            for (i = jaa_i; i < anim; ++i) {
-                if (i >= GAREA_HEIGHT / 2) continue;
-                y = i >= 100;
-                draw_konkka_line(y + (i % 100) * 4);
-                draw_konkka_line(y + (i % 100) * 4 + 2);
-            }
+    case T_KONKKA:
+        if (anim >= 300 && !lisarahat_ok)
+            lopeta();
+        else if (pelit > 0) {
+            vaihda_normaaliin_palettiin();
+            alusta_tila(T_PANOS);
         }
-        jaa_i = anim;
         break;
-    }
     case T_ESIT0: {
-        if (napit.mika_tahansa) {
+        if (napit_kaikki.mika_tahansa) {
             lopeta_esittely();
             return;
         }
@@ -1613,6 +1715,8 @@ void aja_peli_internal(void) {
         break;
     case T_ESIT2:
         esittely2();
+        break;
+    case T_HUOLTO:
         break;
     }
 }
@@ -1643,11 +1747,14 @@ void aja_peli(void) {
         skip_input_read = 0;
     else
         lue_napit();
-    if (napit.lopeta) {
-        pelit += voitot + voitto;
-        jatka = 0;
+    if (napit_kaikki.lopeta) {
+        lopeta();
         return;
     }
+    if (napit_kaikki.lisaa_panos_1)
+        lisaa_panos(1);
+    if (napit_kaikki.lisaa_panos_5)
+        lisaa_panos(5);
     aja_peli_internal();
     paivita_valinnat();
     paivita_kortit();

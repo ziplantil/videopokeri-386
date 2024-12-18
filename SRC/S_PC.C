@@ -13,7 +13,7 @@ static int last_divider = 0;
 static int tupl = 0;
 static char skipper = 0;
 
-const unsigned short dividers[] = {
+static const unsigned short dividers[] = {
     65535, 65535, 65009, 61361, 57917, 54666,
     51598, 48702, 45968, 43388, 40953, 38655,
     36485, 34437, 32505, 30680, 28958, 27333,
@@ -34,7 +34,7 @@ const unsigned short dividers[] = {
       202,   190,   180,   169,   160,   151
 };
 
-void beeper_on(unsigned short divider) {
+static void beeper_on(unsigned short divider) {
     unsigned char mask;
     if (!divider) return;
     outp(0x42, divider);
@@ -48,7 +48,7 @@ void beeper_on(unsigned short divider) {
     beeping = 1;
 }
 
-void beeper_off(void) {
+static void beeper_off(void) {
     outp(0x61, inp(0x61) & 0xfc);
     beeping = 0;
 }

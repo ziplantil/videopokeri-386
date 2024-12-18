@@ -18,7 +18,6 @@ struct midi_instrument {
 
 static int IO_DATA = 0;
 static int IO_STATUS = 0;
-static int adlib_delay = 0;
 static const struct midi_instrument *_bnk;
 static const struct midi_instrument _bnk_midi[];
 static const struct midi_instrument _bnk_mt32[];
@@ -46,7 +45,7 @@ void reset_mpu(void) {
     MPU_CMD(0xFF);
 }
 
-#define TIMEOUT 3000
+#define TIMEOUT 300
 
 int alusta_mpu(int instr_mode) {
     short s;
@@ -60,38 +59,44 @@ int alusta_mpu(int instr_mode) {
     }
     midi_type = instr_mode;
     
+#if 1
+    s = 0;
+    while ((inp(IO_STATUS) & 0x40) && s <= 100)
+        microsleep(10000), ++s;
+    outp(IO_STATUS, 0xFF);
+
     s = 0;
     while ((inp(IO_STATUS) & 0x40) && s <= TIMEOUT)
-        microsleep(1000), ++s;
+        microsleep(10000), ++s;
+    if (s >= TIMEOUT)
+        return 1;
+#else
+    s = 0;
+    while ((inp(IO_STATUS) & 0x40) && s <= TIMEOUT)
+        microsleep(10000), ++s;
     if (s >= TIMEOUT)
         return 1;
     outp(IO_STATUS, 0xFF);
+#endif
 
     s = 0;
     for (;;) {
         if (s++ >= TIMEOUT)
             break;
         if ((inp(IO_STATUS) & 0x80)) {
-            microsleep(1000);
+            microsleep(10000);
             continue;
         }
-        if (inp(IO_DATA) != 0xFE)
+        if (inp(IO_DATA) == 0xFE)
             break;
     }
 
     s = 0;
-    for (;;) {
-        if (s++ >= TIMEOUT)
-            break;
-        if ((inp(IO_STATUS) & 0x40)) {
-            microsleep(1000);
-            continue;
-        }
-        outp(IO_STATUS, 0x3F);
-    }
-
+    while ((inp(IO_STATUS) & 0x40) && s <= TIMEOUT)
+        microsleep(10000), ++s;
     if (s >= TIMEOUT)
         return 1;
+    outp(IO_STATUS, 0x3F);
 
     MPU_DATA(0xB0);
     MPU_DATA(0x79);
@@ -147,7 +152,7 @@ void soitto_komento_mpu(short *c, short hwc,
     short ch = *c;
     switch (k) {
     case COMMAND_NOTE_ON:
-        note_on(hwc, ch, x + transpose[hwc]);
+        note_on(hwc, ch, (unsigned char)((signed char)x + transpose[hwc]));
         break;
     case COMMAND_NOTE_OFF:
         note_off(hwc, ch);
@@ -225,7 +230,7 @@ static const struct midi_instrument _bnk_midi[] = {
 /*  8 */    { 2,  40,    0, 0x7F, 0x7F, 0x7F },
 /*  9 */    { 1, 127,   40, 0x6F, 0x6F, 0x6F },
 /* 10 */    { 1, 122,   40, 0x7F, 0x7F, 0x7F },
-/* 11 */    { 2,  44,    0, 0x7F, 0x7F, 0x3F },
+/* 11 */    { 2,  44,  -12, 0x7F, 0x1F, 0x3F },
 /* 12 */    { 1, 122,   72, 0x7F, 0x7F, 0x7F },
 /* 13 */    { 2,  37,    0, 0x7F, 0x7F, 0x7F },
 /* 14 */    { 2,  62,    0, 0x7F, 0x7F, 0x7F },
@@ -239,6 +244,8 @@ static const struct midi_instrument _bnk_midi[] = {
 /* 22 */    { 2,  56,    0, 0x7F, 0x7F, 0x7F },
 /* 23 */    { 2,  38,    0, 0x7F, 0x7F, 0x3F },
 /* 24 */    { 1,  11,   36, 0x7F, 0x20, 0x7F },
+/* 25 */    { 1, 127,   40, 0x6F, 0x6F, 0x4F },
+/* 26 */    { 1, 127,   40, 0x7F, 0x7F, 0x5F },
 /*  --------- T  PNo   TP    ATK   REL   VOL -- */
 };
 
@@ -246,8 +253,9 @@ static const struct midi_instrument _bnk_midi[] = {
 /*          00:  0 = silent     1 = melodic      2 = percussive
             01: MIDI patch number
             02: transpose
-            03: velocity
-            04: volume
+            03: attack velocity
+            04: release velocity
+            05: volume
 */
 static const struct midi_instrument _bnk_mt32[] = {
 /*  --------- T  PNo   TP    ATK   REL   VOL -- */
@@ -276,6 +284,8 @@ static const struct midi_instrument _bnk_mt32[] = {
 /* 22 */    { 2,  56,    0, 0x7F, 0x7F, 0x7F },
 /* 23 */    { 2,  40,    0, 0x7F, 0x7F, 0x5F },
 /* 24 */    { 1,  38,   25, 0x7F, 0x20, 0x7F },
-/*  --------- T  PNo   TP    VEL   VOL -- */
+/* 25 */    { 1, 114,   28, 0x6F, 0x6F, 0x4F },
+/* 26 */    { 1, 114,   28, 0x7F, 0x7F, 0x5F },
+/*  --------- T  PNo   TP    ATK   REL   VOL -- */
 };
 static const int instruments_cnt = sizeof(_bnk_midi) / sizeof(_bnk_midi[0]);

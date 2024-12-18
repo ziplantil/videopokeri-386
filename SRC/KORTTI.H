@@ -20,18 +20,25 @@ typedef unsigned char kortti_t;
 #define K_JOKERI 0x3F
 #define K_SELKA 0xFF
 
-#define ARRAY_SWAP(a, i, j, temp) do {     \
-        temp = a[i];                       \
-        a[i] = a[j];                       \
-        a[j] = temp;                       \
-    } while (0);
-
+// piirtää kortin selkäpuolen koordinaatteihin (x pyöristyy alas 8 monikertaan)
 void piirra_selka(short x, short y);
+// piirtää kortin koordinaatteihin (x pyöristyy alas 8 monikertaan)
 void piirra_kortti(short x, short y, kortti_t kortti);
+// piirtää kortin vasemman ylänurkan (numero, maa)
+// jos väri != 0, pakottaa tietyn värin
+void piirra_kortti_vynurkka(short x, short y, kortti_t kortti,
+                            unsigned char color);
+// piirtää kortin selkäpuolen koordinaatteihin
+// x1 ja x2 on minimi/maksimi X, mahdollisesti osin peitetty kortti
 void piirra_selka_peitetty(short x1, short x2, short y);
+// pyyhkii kortin kokoisen reiän näytölle
 void pyyhi_kortti(short x, short y);
+
+// siirtää tyhjää aluetta
 void siirra_tyhja(short x1, short y1, short x2, short y2);
+// siirtää kortin selkäpuolta
 void siirra_selka(short x1, short y1, short x2, short y2);
+// siirtää korttia
 void siirra_kortti(short x1, short y1, short x2, short y2, kortti_t kortti);
 
 #endif

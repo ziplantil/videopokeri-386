@@ -23,5 +23,6 @@ extern const unsigned short *A_Apanos2[];
 extern const unsigned short *A_Apanos3[];
 extern const unsigned short *A_Apanos4[];
 extern const unsigned short *A_Apanos5[];
+extern const unsigned short *A_Akenoohi[];
 
 #endif

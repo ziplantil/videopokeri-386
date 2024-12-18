@@ -16,7 +16,9 @@ Julkaisuversion EXE on käännetty Open Watcomilla ja PMODE/W:llä.
 
 Peliä pelataan Q/W/E/R/T ja A/S/D/F/G/H -näppäimillä, jotka ovat samassa
 asettelussa kuin ruudun alareunassa näkyvät napit. Pelistä poistutaan joko
-Escillä tai Backspacella/askelpalauttimella (tai pelaamalla rahat loppuun).
+Escillä tai Backspacella/askelpalauttimella.
+
+Jos asetukset sallivat, lisää rahaa voi lisätä N/M-näppäimillä (1mk/5mk).
 
 Pelin asetuksia voi säätää POKERI.CFG-tiedostosta, jonka on oltava samassa
 kansiossa kuin POKERI.EXE. Muita tiedostoja ei pelin suorittamiseen kaivata
@@ -44,3 +46,4 @@ The configuration for the game happens through POKERI.CFG, which must be
 located in the same directory as POKERI.EXE.
 The game is played with the Q/W/E/R/T A/S/D/F/G/H keys (bottom row of buttons)
 and Esc/Backspace can be used to exit.
+If settings allow, N/M can be used to add more money in-game (1mk/5mk).

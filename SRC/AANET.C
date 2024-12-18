@@ -77,7 +77,9 @@
         21:     rumpu3              (päävoitto)
         22:     tiuku               (päävoitto)
         23:     rumpu4              (päävoitto)
-        24:     loppusointu         (päävoitto)
+        24:     plim
+        25:     keno hävitty #1
+        26:     keno hävitty #2
     ***/
 
 const unsigned short *A_tyhja[] = { KANAVAT_LOPPU };
@@ -93,9 +95,9 @@ const unsigned short A_Mvoitto0[] = {
 const unsigned short A_Mvoitto1[] = {
     SOITIN(0, 1),
     PAALLE(  0, NC_(3)), POIS( 60),
-    PAALLE(180, NG_(2)), POIS(120),
-    PAALLE(120, NA_(2)), POIS( 60),
-    PAALLE(180, NB_(2)), POIS(120),
+    PAALLE(180, NG_(2)), POIS(180),
+    PAALLE( 60, NA_(2)), POIS( 60),
+    PAALLE(180, NB_(2)), POIS(180),
     LOPPU(240)
 };
 const unsigned short A_Mvoitto2[] = {
@@ -121,7 +123,7 @@ const unsigned short A_Mvoitto3[] = {
     PAALLE(15, NC_(0)), POIS(105),
     LOPPU(240)
 };
-AANI_KANAVIA_4(A_Mvoitto);
+AANI_KANAVIA_3(A_Mvoitto);
 
 const unsigned short A_Mtuplaus0[] = {
     SOITIN(0, 4),
@@ -165,7 +167,6 @@ const unsigned short A_Mtuplaus0[] = {
 
     ALKUUN(60),
 };
-
 const unsigned short A_Mtuplaus1[] = {
     SOITIN(0, 5),
     PAALLE( 0, NC_(3)), POIS(60),         ODOTA(120),         
@@ -173,32 +174,31 @@ const unsigned short A_Mtuplaus1[] = {
     PAALLE(60, NC_(3)), POIS(60),         ODOTA(120),         
     PAALLE(60, NFs(2)), POIS(60), PAALLE(60, NG_(2)), POIS(60),
              ODOTA(120),                  ODOTA(120),         
-    PAALLE(60, NE_(2)), POIS(60), PAALLE(60, NF_(2)),
-                       POIS(180), PAALLE(60, NB_(2)),
-                       POIS(180),         ODOTA(120),         
+    PAALLE(60, NE_(2)), POIS(60), PAALLE(60, NF_(2)), POIS(60),
+             ODOTA(120),          PAALLE(60, NB_(2)), POIS(60),
+    PAALLE(60, NB_(2)), POIS(60), PAALLE(60, NB_(2)), POIS(60),
 
-    PAALLE(60, NC_(3)), POIS(60),         ODOTA(120),         
+    PAALLE( 60, NC_(3)), POIS(60),         ODOTA(120),         
     PAALLE(60, NFs(2)), POIS(60), PAALLE(60, NG_(2)), POIS(60),
     PAALLE(60, NC_(3)), POIS(60),         ODOTA(120),         
     PAALLE(60, NFs(2)), POIS(60), PAALLE(60, NG_(2)), POIS(60),
              ODOTA(120),                  ODOTA(120),         
-    PAALLE(60, NE_(2)), POIS(60), PAALLE(60, NF_(2)),
-                       POIS(180), PAALLE(60, NB_(2)),
-                       POIS(180),         ODOTA(120),         
-
-    PAALLE(60, NC_(3)), POIS(60),         ODOTA(120),         
+    PAALLE(60, NE_(2)), POIS(60), PAALLE(60, NF_(2)), POIS(60),
+             ODOTA(120),          PAALLE(60, NB_(2)), POIS(60),
+    PAALLE(60, NB_(2)), POIS(60), PAALLE(60, NB_(2)), POIS(60),
+    
+    PAALLE( 60, NC_(3)), POIS(60),         ODOTA(120),         
     PAALLE(60, NFs(2)), POIS(60), PAALLE(60, NG_(2)), POIS(60),
     PAALLE(60, NC_(3)), POIS(60),         ODOTA(120),         
     PAALLE(60, NFs(2)), POIS(60), PAALLE(60, NG_(2)), POIS(60),
              ODOTA(120),                  ODOTA(120),         
-    PAALLE(60, NE_(2)), POIS(60), PAALLE(60, NF_(2)),
-                       POIS(180), PAALLE(60, NB_(2)),
-                       POIS(180),         ODOTA(120),         
+    PAALLE(60, NE_(2)), POIS(60), PAALLE(60, NF_(2)), POIS(60),
+             ODOTA(120),          PAALLE(60, NB_(2)), POIS(60),
+    PAALLE(60, NB_(2)), POIS(60), PAALLE(60, NB_(2)), POIS(60),
 
     PAALLE(60, NG_(2)), POIS(60),
     LOPPU(240)
 };
-
 const unsigned short A_Mtuplaus2[] = {
     SOITIN(0, 17),
     
@@ -234,7 +234,50 @@ const unsigned short A_Mtuplaus2[] = {
 
     LOPPU(240)
 };
-AANI_KANAVIA_3(A_Mtuplaus);
+const unsigned short A_Mtuplaus3[] = {
+    SOITIN(0, 4),
+    PAALLE( 0, NC_(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NFs(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NA_(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NFs(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NG_(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NFs(5)), POIS(60), PAALLE(60, NF_(5)), POIS(60),
+             ODOTA(120),          PAALLE(60, NF_(5)), POIS(60),
+    PAALLE(60, NE_(5)), POIS(60), PAALLE(60, ND_(5)), POIS(60),
+
+    PAALLE(60, NC_(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NFs(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NA_(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NFs(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NG_(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NFs(5)), POIS(60), PAALLE(60, NF_(5)), POIS(60),
+             ODOTA(120),          PAALLE(60, NF_(5)), POIS(60),
+    PAALLE(60, NE_(5)), POIS(60), PAALLE(60, ND_(5)), POIS(60),
+    
+    PAALLE(60, NC_(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NFs(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NA_(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NFs(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NG_(5)), POIS(60), PAALLE(60, NG_(5)), POIS(60),
+    PAALLE(60, NFs(5)), POIS(60), PAALLE(60, NF_(5)), POIS(60),
+             ODOTA(120),          PAALLE(60, NF_(5)), POIS(60),
+    PAALLE(60, NE_(5)), POIS(60), PAALLE(60, ND_(5)), POIS(60),
+
+    PAALLE( 60, NG_(4)), POIS(60),
+    PAALLE(180, NG_(4)), POIS(60),
+    PAALLE(180, NG_(4)), POIS(60),
+    PAALLE(180, NG_(4)), POIS(60),
+    PAALLE(180, NG_(4)), POIS(60),
+    PAALLE(180, NG_(4)), POIS(60),
+    PAALLE(180, NG_(4)), POIS(60),
+    PAALLE( 60, NA_(4)), POIS(60),
+    PAALLE( 60, NB_(4)), POIS(60),
+    PAALLE( 60, NG_(4)), POIS(60),
+
+    ALKUUN(60),
+};
+
+AANI_KANAVIA_4(A_Mtuplaus);
 
 const unsigned short A_Mtsajaja0[] = {
     SOITIN(0, 19),
@@ -257,10 +300,9 @@ const unsigned short A_Mtsajaja0[] = {
     ODOTA(240),
     
     PAALLE( 0, NG_(4)), POIS(240),
-    PAALLE( 0, NAs(4)), POIS(100),
-    SOITIN(0, 24),
-    PAALLE( 0, NA_(4)), POIS(180),
-    
+    PAALLE( 0, NAs(4)), POIS(240),
+    PAALLE( 0, NA_(4)), POIS(480),
+
     LOPPU(480)
 };
 
@@ -284,10 +326,9 @@ const unsigned short A_Mtsajaja1[] = {
     PAALLE( 0, ND_(3)), POIS(240),
     ODOTA(240),
     
-    PAALLE( 0, NB_(2)), POIS(340),
-    SOITIN(0, 24),
-    PAALLE( 0, NA_(3)), POIS(180),
-    
+    PAALLE( 0, NB_(2)), POIS(480),
+    PAALLE( 0, ND_(4)), POIS(480),
+
     LOPPU(480)
 };
 
@@ -357,7 +398,10 @@ const unsigned short A_Mtsajaja2[] = {
     PAALLE( 45, NF_(2)), POIS(15),
     PAALLE( 15, NG_(2)), POIS(15),
     PAALLE( 15, NC_(3)), POIS(15),
-    ODOTA(285),
+    PAALLE(165, NC_(3)), POIS(15),
+    PAALLE( 15, NC_(3)), POIS(15),
+    PAALLE( 15, NC_(3)), POIS(15),
+    ODOTA(45),
     
     LOPPU(480)
 };
@@ -410,16 +454,23 @@ const unsigned short A_Mtsajaja3[] = {
     PAALLE( 60, NC_(0)), POIS(30),
     PAALLE( 90, NC_(0)), POIS(30),
     PAALLE( 90, NC_(0)), POIS(30),
-    ODOTA(120),
+    PAALLE(  0, NC_(0)), POIS(30),
+    PAALLE( 60, NC_(0)), POIS(30),
     LOPPU(480)
 };
 
 AANI_KANAVIA_4(A_Mtsajaja);
 
 const unsigned short A_Mkonkka0[] = {
-    SOITIN(0, 19), LOPPU(120)
+    SOITIN(0, 6), PAALLE(0, NC_(4)), POIS(240), LOPPU(240)
 };
-AANI_KANAVIA_1(A_Mkonkka);
+const unsigned short A_Mkonkka1[] = {
+    SOITIN(0, 6), PAALLE(0, NE_(4)), POIS(240), LOPPU(240)
+};
+const unsigned short A_Mkonkka2[] = {
+    SOITIN(0, 6), PAALLE(0, NG_(4)), POIS(240), LOPPU(240)
+};
+AANI_KANAVIA_3(A_Mkonkka);
 
 const unsigned short A_Mkoputus0[] = {
     SOITIN(0, 3),
@@ -537,3 +588,9 @@ const unsigned short A_Apanos51[] = {
     SOITIN(0, 6), PAALLE(0, ND_(5)), POIS(240), LOPPU(240)
 };
 AANI_KANAVIA_2(A_Apanos5);
+
+const unsigned short A_Akenoohi0[] = {
+    SOITIN(0, 25), PAALLE(0, NA_(0)), POIS(60),
+    SOITIN(0, 26), PAALLE(60, NA_(0)), POIS(120), LOPPU(480) 
+};
+AANI_KANAVIA_1(A_Akenoohi);

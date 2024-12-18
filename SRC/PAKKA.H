@@ -6,6 +6,7 @@
 
 extern kortti_t pakka[53];
 
+int sekoitusluku(int n);
 void alusta_sekoitin(void);
 void alusta_pakka(void);
 void sekoita_pakka(int i);

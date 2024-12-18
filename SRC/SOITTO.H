@@ -17,17 +17,19 @@
 /* käännetäänkö Sound Blasterin PCM-tuki (mukaan lukien PCM-äänet)? */
 #define SB_PCM 1
 
-/*
-    0 = ei mitään
-    1 = sisäinen kaiutin
-    2 = Tandy
-    3 = AdLib
-    4 = Game Blaster (CMS)
-    5 = Sound Blaster
-    6 = Innovation SSI-2001
-    7 = MPU-401, General MIDI
-    8 = MT-32
- */
+#define SOITTOLAITE_NONE 0      /* ei mitään */
+#define SOITTOLAITE_PC 1        /* sisäinen kaiutin */
+#define SOITTOLAITE_TANDY 2     /* Tandy */
+#define SOITTOLAITE_ADLIB 3     /* AdLib */
+#define SOITTOLAITE_CMS 4       /* Game Blaster (CMS) */
+#define SOITTOLAITE_SB 5        /* Sound Blaster */
+#define SOITTOLAITE_INNOVA 6    /* Innovation SSI-2001 */
+#define SOITTOLAITE_MPU 7       /* MPU-401, General MIDI */
+#define SOITTOLAITE_MT32 8      /* MT-32 */
+#if 0
+#define SOITTOLAITE_CSM1 9      /* Covox Sound Master I */
+#endif
+    
 extern int soittolaite;
 /* Tandy/PCjr: I/O-portti, oletus 0xc0 */
 extern int soittolaite_tandyportti;
@@ -45,6 +47,8 @@ extern int soittolaite_sbdma;
 extern int soittolaite_sidportti;
 /* MPU-401-portti, oletus 0x330 */
 extern int soittolaite_mpuportti;
+/* Covox Sound Master I -portti, oletus 0x220 */
+extern int soittolaite_csm1portti;
 
 extern void (*_soitto_paivita)(void);
 extern void (*_soitto_komento)(short *, short, unsigned char, unsigned char);
@@ -84,6 +88,7 @@ void lopeta_soitto(void);
 #define AANI_PANOS3 18
 #define AANI_PANOS4 19
 #define AANI_PANOS5 20
-#define AANI_AANTEN_LOPPU 21
+#define AANI_KENO_HAVITTY 21
+#define AANI_AANTEN_LOPPU 22
 
 #endif

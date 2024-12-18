@@ -9,31 +9,32 @@ int tekstivali = 2;
 
 unsigned char nbuf[8] = { 0 };
 
-int last_color = -1;
+static int last_color = -1;
 unsigned char taso0maski = 0;
 unsigned char taso1maski = 0;
 unsigned char taso2maski = 0;
 unsigned char taso3maski = 0;
 
-int last_bgcolor = -1;
+static int last_bgcolor = -1;
 unsigned char taso0maskibg = 0;
 unsigned char taso1maskibg = 0;
 unsigned char taso2maskibg = 0;
 unsigned char taso3maskibg = 0;
 
-const int vfont_width[] = {
-    14,14,14,14,14,14,14,14,14,14,0,0,0,0,0,0,
+static const unsigned char vfont_width[] = {
+    14,14,14,14,14,14,14,14,14,14,
     4,0,0,10,0,0,0,0,0,0,0,0,0,8,0,0,
     7,3,7,7,6,7,7,6,7,7,0,0,0,0,0,0,
     13,8,9,8,9,7,7,6,8,3,7,7,6,8,7,7,
-    7,7,7,8,8,8,9,8,9,9,9,0,0,0,0,0,
-    0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,6
+    7,7,7,8,8,8,9,8,9,9,9,8,0,6,0,0,
+    0,5,5,5,5,5,3,5,5,1,3,5,3,5,5,5,
+    5,5,5,5,3,5,7,5,5,5,5,5,0,5
 };
 
 unsigned char *render_wide_n(unsigned int n) {
     unsigned char *ns = &nbuf[6];
     for (;;) {
-        *ns = 0x10 + (n % 10);
+        *ns = 0x16 + (n % 10);
         if (n < 10)
             break;
         --ns;
@@ -91,7 +92,7 @@ void draw_vfont_char(int x, int y, int color, unsigned char ch) {
 
     UPDATE_FG_COLOR(color);
 
-    src = G_vfont + (ch - 0x10) * 0x18;
+    src = G_vfont + (ch - 0x16) * 0x18;
 
     COMPUTE_COORD(x, y, o, b);
     p0 = taso0 + o, p1 = taso1 + o, p2 = taso2 + o, p3 = taso3 + o;
@@ -141,14 +142,19 @@ int measure_vfont(const unsigned char *t, int lihavoi) {
     unsigned char c;
     int w = *t ? -tekstivali : 0;
     while (c = *t++) {
-        if (c == 'Ä') c = 'a';
-        if (c == 'Ö') c = 'o';
+        switch (c) {
+        case 'Ä': c = '['; break;
+        case 'Ö': c = ']'; break;
+        case 'ä': c = '{'; break;
+        case 'ö': c = '}'; break;
+        default: break;
+        }
         if (c == '!') {
             ++w;
             continue;
         }
-        if (c < 0x10 || c >= 0x6f) continue;
-        w += vfont_width[c - 0x10] + lihavoi + tekstivali;
+        if (c < 0x16 || c >= 0x7f) continue;
+        w += vfont_width[c - 0x16] + lihavoi + tekstivali;
     }
     return w;
 }
@@ -158,14 +164,19 @@ void piirra_teksti(int x, int y, int vari,
     unsigned char c;
     int w, ox = x;
     while (c = *t++) {
-        if (c == 'Ä') c = 'a';
-        if (c == 'Ö') c = 'o';
+        switch (c) {
+        case 'Ä': c = '['; break;
+        case 'Ö': c = ']'; break;
+        case 'ä': c = '{'; break;
+        case 'ö': c = '}'; break;
+        default: break;
+        }
         if (c == '!') {
             ++x;
             continue;
         }
-        if (c < 0x10 || c >= 0x6f) continue;
-        w = vfont_width[c - 0x10] + tekstivali;
+        if (c < 0x16 || c >= 0x7f) continue;
+        w = vfont_width[c - 0x16] + tekstivali;
         draw_vfont_char(x, y, vari, c);
         if (lihavoi)
             draw_vfont_char(++x, y, vari, c);

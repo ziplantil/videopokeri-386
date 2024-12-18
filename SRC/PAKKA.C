@@ -1,21 +1,23 @@
 
 #include <stdlib.h>
 #include <time.h>
+#include <assert.h>
+
 #include "POKERI.H"
 #include "PAKKA.H"
 
 kortti_t pakka[53];
-int pakka_i;
+static int pakka_i;
 
-unsigned long rng_seed;
+static unsigned long rng_seed;
 
-void custom_srand(unsigned long u) {
+static void custom_srand(unsigned long u) {
     rng_seed = u;
 }
 
-#define CUSTOM_RAND_MAX 0x40000000UL
+#define CUSTOM_RAND_MAX 0x10000000UL
 
-unsigned long custom_rand() {
+static unsigned long custom_rand() {
     unsigned long s = rng_seed;
     s ^= s << 13;
     s ^= s >> 17;
@@ -27,21 +29,28 @@ unsigned long custom_rand() {
 void alusta_sekoitin(void) {
     unsigned long u /* intentionally uninitialized */;
     u = (u << 23) | (u >> 9);
-    u ^= *(const volatile unsigned long*)0x46c;
+    u += 816418833UL * *(const volatile unsigned long*)0x46c;
     u = (u << 11) | (u >> 21);
-    u ^= *(const volatile unsigned long*)0x41e;
+    u += 1611191243UL * *(const volatile unsigned long*)0x41e;
     u = (u << 29) | (u >> 3);
-    u ^= clock();
+    u += 2058669331UL * (unsigned long)clock();
+    u = (u << 15) | (u >> 17);
     custom_srand(u);
 }
 
+static int sekoitus_jaama = 0;
 int sekoitusluku(int n) { /* [0, n[ */
     unsigned long m, left = CUSTOM_RAND_MAX - (CUSTOM_RAND_MAX % n);
     int i = 0;
     do {
         m = custom_rand();
-    } while (m >= left && i++ < 32);
-    return (int)(m % n);
+    } while (m >= left && i++ < 16);
+    if (m >= left) {
+        int r = (int)((m + sekoitus_jaama) % n);
+        sekoitus_jaama += left;
+        return r;
+    } else
+        return (int)(m % n);
 }
 
 void alusta_pakka(void) {
@@ -56,10 +65,14 @@ void sekoita_pakka(int i) {
     kortti_t tmp;
     int j = sekoitusluku(i + 1);
     RANGE_CHECK(j, 0, i + 1);
-    if (i != j)
-        ARRAY_SWAP(pakka, i, j, tmp);
+    if (i != j) {
+        tmp = pakka[i];
+        pakka[i] = pakka[j];
+        pakka[j] = tmp;
+    }
 }
 
 kortti_t jaa_kortti(void) {
+    assert(pakka_i <= 52);
     return pakka[pakka_i++];
 }

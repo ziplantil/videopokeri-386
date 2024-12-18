@@ -60,7 +60,7 @@ static const int instruments_cnt;
         outp(IO_DATA + d, REG(d)[r] = (v));              \
     } while (0)
 
-void reset_cms(int on) {
+static void reset_cms(int on) {
     int i;
     for (i = 0; i < 32; ++i) {
         CMS_WRITE(0, i, 0);
@@ -70,7 +70,7 @@ void reset_cms(int on) {
     CMS_WRITE(0, 0x1c, on); CMS_WRITE(2, 0x1c, on);
 }
 
-void silence_cms(void) {
+static void silence_cms(void) {
     char i;
     for (i = 0; i < 16; ++i) {
         CMS_WRITE(0, i, 0);
@@ -127,7 +127,7 @@ static const unsigned short sekoitus_s[6] = {
 };
 
 static void note_program_noise(unsigned char d, unsigned char c, short ch,
-                            unsigned char x) {
+                               unsigned char x) {
     unsigned char t, o, n, v = 1 << c;
     short s;
     o = noise_octave[ch], n = noise_freq[ch];
@@ -413,7 +413,7 @@ static const struct cms_instrument _instr[] = {
     /*  6 */        { 0xF, 0, 6, 0x0, 6,   0, 0, 0x00, 0x00, 1, 0x8E,  36 },
     /*  7 */        { 0x6, 0, 3, 0x0, 0,   0, 1, 0x73, 0x40, 0, 0x00,   0 },
     /*  8 */        { 0xC, 0, 4, 0x0, 0,   0, 1, 0x63, 0xD0, 0, 0x00,   0 },
-    /*  9 */        { 0x8, 0, 4, 0xF, 4,   0, 1, 0x53, 0x40, 0, 0x00,   0 },
+    /*  9 */        { 0x8, 0, 2, 0xF, 1,   0, 1, 0x53, 0x40, 0, 0x00,   0 },
     /* 10 */        { 0xB, 2, 5, 0x0, 5,   0, 1, 0x03, 0x00, 0, 0x00,   0 },
     /* 11 */        { 0xC, 0, 1, 0x5, 1,   0, 1, 0x02, 0x00, 0, 0x00,   0 },
     /* 12 */        { 0xE, 4, 5, 0x0, 5,   0, 1, 0x63, 0xD0, 0, 0x00,   0 },
@@ -421,7 +421,7 @@ static const struct cms_instrument _instr[] = {
     /* 14 */        { 0xC, 0, 1, 0x0, 0,  26, 2, 0x33, 0xFF, 1, 0x8E,   0 },
     /* 15 */        { 0xD, 0, 4, 0x0, 4,  31, 2, 0x23, 0xFF, 0, 0x00,   0 },
     /* 16 */        { 0xF, 1, 3, 0x0, 3,  56, 0, 0x00, 0x00, 1, 0x8E,  24 },
-    /* 17 */        { 0xF, 0, 4, 0x0, 0,   0, 1, 0x63, 0x80, 0, 0x00,   0 },
+    /* 17 */        { 0xD, 0, 2, 0x0, 0,   0, 1, 0x63, 0x80, 0, 0x00,   0 },
     /* 18 */        { 0xF, 0, 4, 0xF, 4,   0, 1, 0x53, 0x40, 0, 0x00,   0 },
     /* 19 */        { 0xF, 3, 4, 0x8, 1,   0, 0, 0x00, 0x80, 0, 0x00,   0 },
     /* 20 */        { 0x8, 0, 2, 0x0, 2, -12, 0, 0x00, 0x40, 0, 0x00,   0 },
@@ -429,6 +429,8 @@ static const struct cms_instrument _instr[] = {
     /* 22 */        { 0x9, 0, 2, 0x0, 0,  84, 0, 0x00, 0x80, 0, 0x00,   0 },
     /* 23 */        { 0xB, 0, 3, 0x0, 0,   0, 1, 0x73, 0x10, 0, 0x00,   0 },
     /* 24 */        { 0xE, 0, 6, 0x0, 6,   0, 0, 0x00, 0x00, 0, 0x00,   0 },
+    /* 25 */        { 0x6, 0, 2, 0xF, 1,   0, 1, 0x53, 0x40, 0, 0x00,   0 },
+    /* 26 */        { 0xC, 0, 4, 0xF, 4,   0, 1, 0x53, 0x40, 0, 0x00,   0 },
     /*                VOL  A  D   S   R   TP  N? N-OF  N-VL  E? E-FF E-TP */
 };
 static const int instruments_cnt = sizeof(_instr) / INSTR_SIZE;

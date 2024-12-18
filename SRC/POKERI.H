@@ -8,6 +8,7 @@
 #define RECT_DUMP 0
 
 extern int english;
+extern int keno;
 
 #define NDEBUG !DEBUG
 

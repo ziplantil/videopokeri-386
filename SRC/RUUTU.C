@@ -12,6 +12,7 @@
 #include "PELI.H"
 #include "POYTA.H"
 #include "MUISTI.H"
+#include "KENO.H"
 #include <assert.h>
 #if RECT_DUMP
 #include <stdio.h>
@@ -19,11 +20,12 @@
 
 typedef unsigned long intptr_t;
 
-unsigned char * const VGA_MEM = (unsigned char *)0xa0000;
-unsigned char * const VGA_TMEM = (unsigned char *)0xb8000;
+static unsigned char * const VGA_MEM = (unsigned char *)0xa0000;
+static unsigned char * const VGA_TMEM = (unsigned char *)0xb8000;
 
 /* 4 tasoa, 640*480 per taso */
 static unsigned int total_frames = 0;
+
 unsigned char *screen;
 unsigned char *taso0, *taso1, *taso2, *taso3;
 unsigned char *ylapalkki_tausta;
@@ -36,30 +38,46 @@ unsigned char *kortti_cache2;
 unsigned char *kortti_cache3;
 unsigned char *kortti_cache4;
 unsigned char *old_vga_palette;
+
 char _paivita_palkki = 1;
 char _paivita_ylapalkki = 0;
 char _paivita_alapalkki = 0;
 char _paivita_ylapalkki_voitot = 0;
 char _paivita_alapalkki_voitto = 0;
 char _paivita_alapalkki_valinnat = 0;
+
 #if RECT_DUMP
 FILE* rectlog;
 #endif
 
 #define RGB(r, g, b) (r>>2),(g>>2),(b>>2)
 
-const unsigned char custom_palette[] = {
+static const unsigned char custom_palette[] = {
     RGB(  0,  0,  0), RGB(  0,  0,192), RGB(  0,128,  0), RGB(  0,128,128),
     RGB(160,  0,  0), RGB(160,  0,160), RGB(128, 96,  0), RGB(192,192,192),
     RGB(128,128,128), RGB(  0,  0,255), RGB(  0,255,  0), RGB(  0,255,255),
     RGB(255,  0,  0), RGB(255,  0,255), RGB(255,255,  0), RGB(255,255,255)
 };
 
-const unsigned char custom_palette2[] = {
+static const unsigned char custom_palette2[] = {
     RGB(  0,  0,  0), RGB(  0,  0,192), RGB(  0, 64,  0), RGB(  0, 64,128),
     RGB(160,  0,  0), RGB(160,  0,160), RGB(128, 96,  0), RGB(192, 96,192),
     RGB(128, 64,128), RGB(  0,  0,255), RGB(  0,128,  0), RGB(  0,128,255),
     RGB(255,  0,  0), RGB(255,  0,255), RGB(255,128,  0), RGB(255,128,255)
+};
+
+static const unsigned char custom_palette3[] = {
+    RGB(  0,  0,  0), RGB(  0,  0, 48), RGB(  0,128,  0), RGB(  0,128, 32),
+    RGB(160,  0,  0), RGB(160,  0, 40), RGB(128, 96,  0), RGB(192,192, 48),
+    RGB(128,128, 32), RGB(  0,  0, 64), RGB(  0,255,  0), RGB(  0,255, 64),
+    RGB(255,  0,  0), RGB(255,  0, 64), RGB(255,255,  0), RGB(255,255, 64)
+};
+
+static const unsigned char custom_palette4[] = {
+    RGB(  0,  0,  0), RGB(  0,  0, 96), RGB(  0, 64,  0), RGB(  0, 64, 64),
+    RGB(160,  0,  0), RGB(160,  0, 80), RGB(128, 48,  0), RGB(192, 96, 96),
+    RGB(128, 64, 64), RGB(  0,  0,127), RGB(  0,127,  0), RGB(  0,127,127),
+    RGB(255,  0,  0), RGB(255,  0,127), RGB(255,127,  0), RGB(255,127,127)
 };
 
 struct arena {
@@ -77,7 +95,7 @@ static struct rect urects[64];
 short urects_n = 0;
 
 #define IMAGE_SIZE(w, h) ((w) * (h) * 4 / (PPB))
-const struct arena arenas[] = {
+static const struct arena arenas[] = {
     { &taso0,                   PLANE_SIZE }, 
     { &taso1,                   PLANE_SIZE },
     { &taso2,                   PLANE_SIZE },
@@ -94,6 +112,7 @@ const struct arena arenas[] = {
     { &old_vga_palette,         192 }
 };
 #define ARENAS_N ((sizeof(arenas)) / (sizeof(arenas[0])))
+int test = IMAGE_SIZE(24 * 12 + KORTTI_L, 56 * 3 + KORTTI_K);
 
 void free_screen(void) {
 #if RECT_DUMP
@@ -131,20 +150,28 @@ char alusta_ruutu(unsigned long *koko) {
 
 static int palette_changed = 0;
 
-void vaihda_normaaliin_palettiin(void) {
-    vga_set_palette(custom_palette, 0, 6);
-    vga_set_palette(custom_palette + 3 * 6, 20, 1);
-    vga_set_palette(custom_palette + 3 * 7, 7, 1);
-    vga_set_palette(custom_palette + 3 * 8, 56, 8);
+static void vaihda_palettia(const unsigned char *palette) {
+    vga_set_palette(palette, 0, 6);
+    vga_set_palette(palette + 3 * 6, 20, 1);
+    vga_set_palette(palette + 3 * 7, 7, 1);
+    vga_set_palette(palette + 3 * 8, 56, 8);
     palette_changed = 1;
 }
 
+void vaihda_normaaliin_palettiin(void) {
+    vaihda_palettia(custom_palette);
+}
+
 void vaihda_liilaan_palettiin(void) {
-    vga_set_palette(custom_palette2, 0, 6);
-    vga_set_palette(custom_palette2 + 3 * 6, 20, 1);
-    vga_set_palette(custom_palette2 + 3 * 7, 7, 1);
-    vga_set_palette(custom_palette2 + 3 * 8, 56, 8);
-    palette_changed = 1;
+    vaihda_palettia(custom_palette2);
+}
+
+void vaihda_keltaiseen_palettiin(void) {
+    vaihda_palettia(custom_palette3);
+}
+
+void vaihda_punaiseen_palettiin(void) {
+    vaihda_palettia(custom_palette4);
 }
 
 short ruudun_vaihto(short tila, char oikeesti) {
@@ -172,71 +199,6 @@ void tyhjenna_ruutu(void) {
 
 void piirra_tausta(void) {
     tyhjenna_ruutu();
-}
-
-void piilota_kadet_(void) {
-    piirra_suorakulmio(240, 48, 352, KASI_LKM * 12, 0);
-}
-
-void piirra_kadet(char hohda_aina) {
-    short i, hohda = hohda_aina || (anim & 32), y = 48, vari, kerroin;
-    piilota_kadet_();
-    if (!hohda && voitto_kasi >= 0)
-        piirra_suorakulmio(240, y + 12 * voitto_kasi, 352, 12, 2);
-    if (!jokeri_saatavilla)
-        y += 12;
-    for (i = jokeri_saatavilla ? 0 : 1; i < KASI_LKM; ++i) {
-        vari = (hohda && voitto_kasi == i) ? 4 : 14;
-        kerroin = jokeri ? kadet[i].kerroin_jokeri : kadet[i].kerroin;
-        piirra_teksti(240, y, vari, 0, kadet[i].nimi, 0);
-        piirra_teksti(576, y, vari, 0, "@", 0);
-        if (kerroin)
-            piirra_luku_oikea(572, y, vari, 1, panos * kerroin, 0);
-        else
-            piirra_teksti_oikea(572, y, vari, 1, "-", 0);
-        y += 12;
-    }
-    paivita_alue(240, 48, 352, 12 * KASI_LKM);
-}
-
-void piirra_kadet_uudelleen(void) {
-    short i, hohda = anim & 32, y = 48, vari, kerroin;
-    if (voitto_kasi < 0) return;
-    i = voitto_kasi;
-    y += 12 * i;
-    piirra_suorakulmio(240, y, 352, 12, !hohda ? 2 : 0);
-    vari = hohda ? 4 : 14;
-    kerroin = jokeri ? kadet[i].kerroin_jokeri : kadet[i].kerroin;
-    piirra_teksti(240, y, vari, 0, kadet[i].nimi, 0);
-    piirra_teksti(576, y, vari, 0, "@", 0);
-    if (kerroin)
-        piirra_luku_oikea(572, y, vari, 1, panos * kerroin, 0);
-    else
-        piirra_teksti_oikea(572, y, vari, 1, "-", 0);
-    paivita_alue(240, y, 352, 12);
-}
-
-void vilkuta_voittokatta(void) {
-    short i, j, y;
-    int o, pstride = STRIDE - 352 / 8;
-    unsigned char *p1, *p2, *p3;
-    if (voitto_kasi < 0) return;
-    y = 48 + voitto_kasi * 12;
-    o = y * STRIDE + 240 / 8;
-    p1 = taso1 + o, p2 = taso2 + o, p3 = taso3 + o;
-    for (i = 0; i < 12; ++i) {
-        for (j = 0; j < 352 / 8; ++j) {
-            *p3++ = (*p3 ^ 0xFF) & *p2++;
-            *p1++ = *p1 ^ 0xFF;
-        }
-        p1 += pstride, p2 += pstride, p3 += pstride;
-    }
-    paivita_alue(240, y, 352, 12);
-}
-
-void piilota_kadet(void) {
-    piilota_kadet_();
-    paivita_alue(240, 48, 352, KASI_LKM * 12);
 }
 
 const unsigned char COL[] = { 0xFF, 0x7F, 0x3F, 0x1F, 0x0F, 0x07, 0x03, 0x01 };
@@ -364,8 +326,8 @@ void piirra_kuva_rajaa_y(short x, short y, short w, short h, short rh,
 }
 
 void piirra_kuva_rajaa(short tx, short ty, short tw, short th,
-                        short sx, short sy, short sw, short sh,
-                        const unsigned char* kuva) {
+                       short sx, short sy, short sw, short sh,
+                       const unsigned char* kuva) {
     int l, o;
     const unsigned char *s0, *s1, *s2, *s3;
     unsigned char *p0, *p1, *p2, *p3;
@@ -427,6 +389,142 @@ void piirra_kuva_maski(short x, short y, short w, short h,
             *p3++ = (*p3 & ~c) | (*s3++ & c);
         }
         p0 += pstride, p1 += pstride, p2 += pstride, p3 += pstride;
+    }
+}
+
+static void piirra_kuva_maski2(short x, short y, short w, short h,
+                short sx, short sy, short sw, short sh,
+                const unsigned char* kuva, unsigned char maski,
+                unsigned char transp) {
+    const unsigned char *s0, *s1, *s2, *s3;
+    unsigned char m, *p0, *p1, *p2, *p3;
+    int o, s, pstride, sstride;
+    assert((x & 7) == 0);
+    assert((w & 7) == 0);
+    assert((sx & 7) == 0);
+    assert((sw & 7) == 0);
+
+    x >>= 3, w >>= 3;
+    o = y * STRIDE + x;
+    sstride = sw >> 3;
+    pstride = STRIDE - w;
+    kuva += ((sy * sw + sx) >> 3);
+    s = sstride * sh;
+    sstride -= w;
+
+    s0 = kuva, s1 = kuva + s, s2 = kuva + 2 * s, s3 = kuva + 3 * s;
+    p0 = taso0 + o, p1 = taso1 + o, p2 = taso2 + o, p3 = taso3 + o;
+    m = maski;
+
+    for (s = 0; s < h; ++s) {
+        for (o = 0; o < w; ++o) {
+            if (transp)
+                m = maski & (*s0 | *s1 | *s2 | *s3);
+            *p0++ = (*p0 & ~m) | (*s0++ & m);
+            *p1++ = (*p1 & ~m) | (*s1++ & m);
+            *p2++ = (*p2 & ~m) | (*s2++ & m);
+            *p3++ = (*p3 & ~m) | (*s3++ & m);
+        }
+        p0 += pstride, p1 += pstride, p2 += pstride, p3 += pstride;
+        s0 += sstride, s1 += sstride, s2 += sstride, s3 += sstride;
+    }
+}
+
+#define SHIFT_READ(p, s) ((unsigned char)(((((unsigned short)(p)[0]) << 8) | ((unsigned short)(p)[1])) >> (s)))
+
+static void piirra_kuva_maski2s(short x, short y, short w, short h,
+                short sx, short sy, short sw, short sh,
+                const unsigned char* kuva, unsigned char maski,
+                unsigned char transp, unsigned char shift) {
+    const unsigned char *s0, *s1, *s2, *s3;
+    unsigned char m, *p0, *p1, *p2, *p3, c0, c1, c2, c3;
+    int o, s, pstride, sstride;
+    assert((x & 7) == 0);
+    assert((w & 7) == 0);
+    assert((sx & 7) == 0);
+    assert((sw & 7) == 0);
+    assert(shift <= 8);
+    shift = 8 - shift;
+
+    x >>= 3, w >>= 3;
+    o = y * STRIDE + x;
+    sstride = sw >> 3;
+    pstride = STRIDE - w;
+    kuva += ((sy * sw + sx) >> 3);
+    s = sstride * sh;
+    sstride -= w;
+
+    s0 = kuva, s1 = kuva + s, s2 = kuva + 2 * s, s3 = kuva + 3 * s;
+    p0 = taso0 + o, p1 = taso1 + o, p2 = taso2 + o, p3 = taso3 + o;
+    m = maski;
+
+    for (s = 0; s < h; ++s) {
+        for (o = 0; o < w; ++o) {
+            c0 = SHIFT_READ(s0, shift);
+            c1 = SHIFT_READ(s1, shift);
+            c2 = SHIFT_READ(s2, shift);
+            c3 = SHIFT_READ(s3, shift);
+            if (transp)
+                m = maski & (c0 | c1 | c2 | c3);
+            *p0++ = (*p0 & ~m) | (c0 & m);
+            *p1++ = (*p1 & ~m) | (c1 & m);
+            *p2++ = (*p2 & ~m) | (c2 & m);
+            *p3++ = (*p3 & ~m) | (c3 & m);
+            s0++, s1++, s2++, s3++;
+        }
+        p0 += pstride, p1 += pstride, p2 += pstride, p3 += pstride;
+        s0 += sstride, s1 += sstride, s2 += sstride, s3 += sstride;
+    }
+}
+
+static const unsigned char maski_w[9] = {
+            0x00, 0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF };
+#define SUIKALE_MASKI(x, w) (unsigned char)(maski_w[(w)] >> (x))
+
+void piirra_kuva_suikale(short tx, short ty, short tw, short th,
+                         short sx, short sy, short sw, short sh,
+                         const unsigned char* kuva, unsigned char transp) {
+    unsigned char sxd = sx & 7, txd = tx & 7;
+    short sxo = sx & ~7, txo = tx & ~7;
+    if (!tw) return;
+    if (sxd == txd) {
+        unsigned char ow = 8 - txd;
+        piirra_kuva_maski2(txo, ty, 8, th, sxo, sy, sw, sh,
+                        kuva, SUIKALE_MASKI(txd, tw >= 8 ? 8 : tw), transp);
+        tw = tw > ow ? tw - ow : 0;
+        sxo += 8, txo += 8, sxd = 0, txd = 0;
+        if (tw >= 8) {
+            unsigned short vw = tw & ~7;
+            piirra_kuva_maski2(txo, ty, tw & ~7, th, sxo, sy, sw, sh,
+                            kuva, 0xFF, transp);
+            tw &= 7, txo += vw, sxo += vw;
+        }
+        if (tw)
+            piirra_kuva_maski2(txo, ty, 8, th, sxo, sy, sw, sh,
+                            kuva, SUIKALE_MASKI(txd, tw), transp);
+    } else {
+        unsigned char shift;
+        unsigned char ow = 8 - txd;
+        if (sxd >= txd)
+            shift = sxd - txd;
+        else {
+            shift = 8 + sxd - txd;
+            --kuva;
+        }
+
+        piirra_kuva_maski2s(txo, ty, 8, th, sxo, sy, sw, sh,
+                        kuva, SUIKALE_MASKI(txd, tw >= 8 ? 8 : tw), transp, shift);
+        tw = tw > ow ? tw - ow : 0;
+        sxo += 8, txo += 8, sxd = 0, txd = 0;
+        if (tw >= 8) {
+            unsigned short vw = tw & ~7;
+            piirra_kuva_maski2s(txo, ty, vw, th, sxo, sy, sw, sh,
+                            kuva, 0xFF, transp, shift);
+            tw &= 7, txo += vw, sxo += vw;
+        }
+        if (tw)
+            piirra_kuva_maski2s(txo, ty, 8, th, sxo, sy, sw, sh,
+                            kuva, SUIKALE_MASKI(txd, tw), transp, shift);
     }
 }
 
@@ -525,7 +623,7 @@ void piirra_ylapalkki_tausta(void) {
     piirra_suorakulmio(33, 6, 174, 18, 7);
     piirra_suorakulmio(34, 7, 172, 16, 1);
     if (english) {
-        piirra_teksti(36, 9, 7, 0, "CREDITS", 0);
+        piirra_teksti(36, 9, 7, 0, "CREDIT", 0);
     } else {
         piirra_teksti(36, 9, 7, 0, "PELIT", 0);
     }
@@ -579,7 +677,7 @@ void piirra_valittu_kuva() {
     piirra_suorakulmio(6, 8, 84, 16, 7);
     piirra_suorakulmio(7, 9, 82, 14, 11);
     if (english) {
-        piirra_teksti(30, 10, 1, 0, "HOLD", 0);
+        piirra_teksti(30, 10, 1, 0, "HELD", 0);
     } else {
         piirra_teksti(15, 10, 1, 0, "VALITTU", 0);
     }
@@ -613,7 +711,7 @@ void piirra_alapalkki(void) {
     if (alapalkki_fade == 0)
         piirra_valinnat(0);
     else if (alapalkki_fade == 8)
-        piirra_alapalkki_voitto(0);
+        keno ? keno_piirra_alapalkki_voitto(0) : piirra_alapalkki_voitto(0);
     paivita_alue(0, ALAPALKKI_Y, GAREA_WIDTH, 32);
 }
 
@@ -625,6 +723,57 @@ void piirra_palkki(void) {
     piirra_palkki_napit();
     paivita_alue(0, GAREA_HEIGHT + 8,
             PLANE_WIDTH, PLANE_HEIGHT - GAREA_HEIGHT - 8);
+}
+
+
+#define TUPLAUS_WIDTH 240
+
+int tuplaus_banner_x = 0;
+void paivita_tuplaus_alapalkki(void) {
+    const int S = TUPLAUS_WIDTH / PPB;
+    const int L = TUPLAUS_WIDTH / PPB * 16;
+    const int y = ALAPALKKI_Y + 8;
+    const unsigned char *p0, *p1, *p2, *p3, *p0a, *p0b;
+    unsigned char *d0, *d1, *d2, *d3;
+    unsigned short s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+    int sx = tuplaus_banner_x, ox, oy;
+    int xb = sx >> 3, xo = sx & 7, xs = 8 - xo;
+    int i, j;
+
+    for (i = 0; i < 16; ++i) {
+        ox = xb + S * i;
+        oy = ((y + i) * STRIDE + 416 / PPB) - 1;
+
+        p0 = tuplaus_viesti + ox;
+        p1 = tuplaus_viesti + ox + L;
+        p2 = tuplaus_viesti + ox + L * 2;
+        p3 = tuplaus_viesti + ox + L * 3;
+        p0b = tuplaus_viesti + S * (i + 1);
+        d0 = taso0 + oy, d1 = taso1 + oy, d2 = taso2 + oy, d3 = taso3 + oy;
+
+        for (j = 0; j <= 16; ++j) {
+            s0 <<= xs, s1 <<= xs, s2 <<= xs, s3 <<= xs;
+            s0 |= *p0++; s1 |= *p1++; s2 |= *p2++; s3 |= *p3++;
+            if (p0 == p0b) {
+                p0 -= TUPLAUS_WIDTH / PPB;
+                p1 -= TUPLAUS_WIDTH / PPB;
+                p2 -= TUPLAUS_WIDTH / PPB;
+                p3 -= TUPLAUS_WIDTH / PPB;
+            }
+            s0 <<= xo, s1 <<= xo, s2 <<= xo, s3 <<= xo;
+            if (j) {
+                *d0++ = (s0 >> 8);
+                *d1++ = (s1 >> 8);
+                *d2++ = (s2 >> 8);
+                *d3++ = (s3 >> 8);
+            } else {
+                ++d0, ++d1, ++d2, ++d3;
+            }
+        }
+    }
+
+    tuplaus_banner_x = (tuplaus_banner_x + tickskip + 1) % TUPLAUS_WIDTH;
+    paivita_alue(416, y, 128, 16);
 }
 
 void valmistele_ruutu(void) {
@@ -663,18 +812,26 @@ void ruudun_paivitys(void) {
     if (_paivita_alapalkki)
         piirra_alapalkki(), _paivita_alapalkki = 0;
     else if (_paivita_alapalkki_voitto)
-        piirra_alapalkki_vain_voitto(1), _paivita_alapalkki_voitto = 0;
+        keno ? keno_piirra_alapalkki_vain_voitto(1)
+             : piirra_alapalkki_vain_voitto(1), _paivita_alapalkki_voitto = 0;
     else if (_paivita_alapalkki_valinnat)
-        piirra_alapalkki_valinnat(), _paivita_alapalkki_valinnat = 0;
+        keno ? (void)0
+             : piirra_alapalkki_valinnat(), _paivita_alapalkki_valinnat = 0;
 }
+
+static void blit_all_rects(void);
 
 void paivita_alue(unsigned short x, unsigned short y,
             unsigned short w, unsigned short h) {
     struct rect *rect;
     assert(w > 0 && h > 0);
+    if (urects_n == sizeof(urects) / sizeof(urects[0])) {
+        blit_all_rects();
+        urects_n = 0;
+    }
     rect = &urects[urects_n++];
     w = (w + 7) >> 3;
-    if (x & 7)
+    if (x & 15)
         ++w;
     x = (x >> 3) & ~1;
     rect->o = y * STRIDE + x;
@@ -717,25 +874,29 @@ void blit_rects(unsigned char *src, struct rect *rct, unsigned n);
     "add esp, 12" \
     parm [edi] [esi] [ecx] modify exact [edi esi ecx edx eax ebx]
 
+static void blit_all_rects(void) {
+#if RECT_DUMP
+    short i;
+    fprintf(rectlog, "Frame #%u (Game = %s)\n", total_frames,
+            pelitila_nimi(tila));
+    for (i = 0; i < urects_n; ++i) {
+        fprintf(rectlog, "  Rect #%u: (%u,%u,%u,%u)\n", i,
+            (urects[i].o % STRIDE) << 3, urects[i].o / STRIDE,
+            urects[i].w << 3, urects[i].h);
+    }
+#endif
+    vga_select_planes(0x01); blit_rects(taso0, urects, urects_n);
+    vga_select_planes(0x02); blit_rects(taso1, urects, urects_n);
+    vga_select_planes(0x04); blit_rects(taso2, urects, urects_n);
+    vga_select_planes(0x08); blit_rects(taso3, urects, urects_n);
+}
+
 void ruudun_piirto(void) {
     if (_paivita_palkki)
         piirra_palkki(), _paivita_palkki = 0;
 
     if (urects_n) {
-#if RECT_DUMP
-        short i;
-        fprintf(rectlog, "Frame #%u (Game = %s)\n", total_frames,
-                pelitila_nimi(tila));
-        for (i = 0; i < urects_n; ++i) {
-            fprintf(rectlog, "  Rect #%u: (%u,%u,%u,%u)\n", i,
-                (urects[i].o % STRIDE) << 3, urects[i].o / STRIDE,
-                urects[i].w << 3, urects[i].h);
-        }
-#endif
-        vga_select_planes(0x01); blit_rects(taso0, urects, urects_n);
-        vga_select_planes(0x02); blit_rects(taso1, urects, urects_n);
-        vga_select_planes(0x04); blit_rects(taso2, urects, urects_n);
-        vga_select_planes(0x08); blit_rects(taso3, urects, urects_n);
+        blit_all_rects();
         urects_n = 0;
     }
     ++total_frames;

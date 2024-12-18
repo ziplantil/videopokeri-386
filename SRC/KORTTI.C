@@ -6,6 +6,71 @@
 #include "RUUTU.H"
 #include "KUVAT.H"
 
+static const int max_offset = CARDAREA_HEIGHT * STRIDE;
+
+#define KAIKKI_TASOT_SET(o, v) \
+    (oo = (o), taso0[oo] = v, taso1[oo] = v, taso2[oo] = v, taso3[oo] = v)
+#define KAIKKI_TASOT_OR(o, v) \
+    (oo = (o), cc = (v), \
+     taso0[oo] |= cc, taso1[oo] |= cc, taso2[oo] |= cc, taso3[oo] |= cc)
+#define KAIKKI_TASOT_AND_OR(o, vo, va) \
+    (oo = (o), co = (vo), ca = (va), \
+     taso0[oo] = (taso0[oo] & ca) | co, taso1[oo] = (taso1[oo] & ca) | co, \
+     taso2[oo] = (taso2[oo] & ca) | co, taso3[oo] = (taso3[oo] & ca) | co)
+#define KAIKKI_TASOT_MEMSET(o, b, c) \
+    (oo = (o), fast_memset(taso0 + oo, b, c), fast_memset(taso1 + oo, b, c), \
+               fast_memset(taso2 + oo, b, c), fast_memset(taso3 + oo, b, c))
+#define LAKANA_OIKEA ((KORTTI_L - 1) / PPB)
+#define LAKANA_ALAS ((KORTTI_K - 8) * STRIDE)
+
+const unsigned char corner_ml[8] =
+    { 0xFC, 0xF0, 0xE0, 0xC0, 0xC0, 0x80, 0x80, 0x80 };
+const unsigned char corner_mr[8] =
+    { 0x3F, 0x0F, 0x07, 0x03, 0x03, 0x01, 0x01, 0x01 };
+const unsigned char corner_mlx[8] =
+    { 0x80, 0x80, 0x80, 0xC0, 0xC0, 0xE0, 0xF0, 0xFC };
+const unsigned char corner_mrx[8] =
+    { 0x01, 0x01, 0x01, 0x03, 0x03, 0x07, 0x0F, 0x3F };
+const unsigned char corner_wl[8] =
+    { 0x00, 0x03, 0x0F, 0x1F, 0x1F, 0x3F, 0x3F, 0x3F };
+const unsigned char corner_wr[8] =
+    { 0x00, 0xC0, 0xF0, 0xF8, 0xF8, 0xFC, 0xFC, 0xFC };
+const unsigned char corner_wlx[8] =
+    { 0x3F, 0x3F, 0x3F, 0x1F, 0x1F, 0x0F, 0x03, 0x00 };
+const unsigned char corner_wrx[8] =
+    { 0xFC, 0xFC, 0xFC, 0xF8, 0xF8, 0xF0, 0xC0, 0x00 };
+
+static void piirra_lakana(int offset) {
+    int i, o = offset;
+    short n = KORTTI_L / PPB;
+    register short oo;
+    unsigned char co, ca;
+    for (i = 0; i < 8; ++i) {
+        if (o >= max_offset) return;
+        RANGE_TASO0(taso0 + o);
+        KAIKKI_TASOT_AND_OR(o, corner_wl[i], corner_ml[i]);
+        KAIKKI_TASOT_MEMSET(o + 1, i == 0 ? 0x00 : 0xff, n - 2);
+        KAIKKI_TASOT_AND_OR(o + LAKANA_OIKEA, corner_wr[i], corner_mr[i]);
+        o += STRIDE;
+    }
+    for (i = 0; i < KORTTI_K - 16; ++i) {
+        if (o >= max_offset) return;
+        RANGE_TASO0(taso0 + o);
+        KAIKKI_TASOT_SET(o, 0x7F);
+        KAIKKI_TASOT_MEMSET(o + 1, 0xff, n - 2);
+        KAIKKI_TASOT_SET(o + n - 1, 0xFE);
+        o += STRIDE;
+    }
+    for (i = 0; i < 8; ++i) {
+        if (o >= max_offset) return;
+        RANGE_TASO0(taso0 + o);
+        KAIKKI_TASOT_AND_OR(o, corner_wlx[i], corner_mlx[i]);
+        KAIKKI_TASOT_MEMSET(o + 1, i == 7 ? 0x00 : 0xff, n - 2);
+        KAIKKI_TASOT_AND_OR(o + LAKANA_OIKEA, corner_wrx[i], corner_mrx[i]);
+        o += STRIDE;
+    }
+}
+
 const unsigned char corner_l[8] =
     { 0x00, 0x07, 0x1F, 0x3F, 0x3F, 0x7F, 0x7F, 0x7F };
 const unsigned char corner_r[8] =
@@ -15,43 +80,38 @@ const unsigned char corner_lx[8] =
 const unsigned char corner_rx[8] =
     { 0xFE, 0xFE, 0xFE, 0xFC, 0xFC, 0xF8, 0xE0, 0x00 };
 
-#define KAIKKI_TASOT_OR(o, v) \
-    (oo = (o), taso0[oo] |= v, taso1[oo] |= v, taso2[oo] |= v, taso3[oo] |= v)
-#define KAIKKI_TASOT_MEMSET(o, b, c) \
-    (oo = (o), fast_memset(taso0 + oo, b, c), fast_memset(taso1 + oo, b, c), \
-               fast_memset(taso2 + oo, b, c), fast_memset(taso3 + oo, b, c))
-#define LAKANA_OIKEA ((KORTTI_L - 1) / PPB)
-#define LAKANA_ALAS ((KORTTI_K - 8) * STRIDE)
-
-const int max_offset = CARDAREA_HEIGHT * STRIDE;
-int offset, bitoffset;
-
-void piirra_lakana(int offset) {
+#if 0
+static void piirra_lakana_old(int offset) {
     int i, o = offset;
-    short oo;
+    short n = KORTTI_L / PPB;
+    register short oo;
+    unsigned char cc;
     for (i = 0; i < 8; ++i) {
-        if (o >= max_offset) break;
+        if (o >= max_offset) return;
         RANGE_TASO0(taso0 + o);
         KAIKKI_TASOT_OR(o, corner_l[i]);
-        KAIKKI_TASOT_MEMSET(o + 1, 0xff, KORTTI_L / PPB - 2);
+        KAIKKI_TASOT_MEMSET(o + 1, 0xff, n - 2);
         KAIKKI_TASOT_OR(o + LAKANA_OIKEA, corner_r[i]);
         o += STRIDE;
     }
     for (i = 0; i < KORTTI_K - 16; ++i) {
-        if (o >= max_offset) break;
+        if (o >= max_offset) return;
         RANGE_TASO0(taso0 + o);
-        KAIKKI_TASOT_MEMSET(o, 0xff, KORTTI_L / PPB);
+        KAIKKI_TASOT_MEMSET(o, 0xff, n);
         o += STRIDE;
     }
     for (i = 0; i < 8; ++i) {
-        if (o >= max_offset) break;
+        if (o >= max_offset) return;
         RANGE_TASO0(taso0 + o);
         KAIKKI_TASOT_OR(o, corner_lx[i]);
-        KAIKKI_TASOT_MEMSET(o + 1, 0xff, KORTTI_L / PPB - 2);
+        KAIKKI_TASOT_MEMSET(o + 1, 0xff, n - 2);
         KAIKKI_TASOT_OR(o + LAKANA_OIKEA, corner_rx[i]);
         o += STRIDE;
     }
 }
+#endif
+
+static int offset, bitoffset;
 
 void piirra_selka(short x, short y) {
     COMPUTE_COORD(x, y, offset, bitoffset);
@@ -62,6 +122,7 @@ void piirra_selka(short x, short y) {
 void piirra_selka_peitetty(short x1, short x2, short y) {
     short xo, i, oo;
     int o;
+    unsigned char cc;
     x1 &= ~7, x2 &= ~7;
     xo = x2 - x1;
     if (xo >= (KORTTI_L - 8) || xo <= -KORTTI_L + 8)
@@ -101,7 +162,7 @@ void piirra_selka_peitetty(short x1, short x2, short y) {
     }
 }
 
-const unsigned char maa_red[] = { 0x00, 0xFF, 0xFF, 0x00 };
+const unsigned char maa_red[] = { 0xFF, 0x00, 0xFF, 0x00 };
 
 void piirra_kortti_frame(int offset, unsigned char red) {
     int i;
@@ -179,8 +240,8 @@ void draw_16x16_nshift(int offset, const unsigned char *p,
     }
 }
 
-void draw_16x16_wshift(int offset, const unsigned char *p,
-                        short x, short y, unsigned char red) {
+void draw_16x16_wshift_q(int offset, const unsigned char *p,
+                         short x, short y, unsigned char red) {
     unsigned char *p0, *p1, *p2, *p3, c1, c2, c3;
     char b = x & 7, i;
     int pstride = STRIDE - 3;
@@ -206,6 +267,50 @@ void draw_16x16_wshift(int offset, const unsigned char *p,
     }
 }
 
+void draw_16x16_wshift(int offset, const unsigned char *p,
+                       short x, short y, unsigned char color) {
+    unsigned char *p0, *p1, *p2, *p3, c1, c2, c3;
+    char b = x & 7, i;
+    int pstride = STRIDE - 3;
+    unsigned char taso0maski = ((color     ) & 1) ? 0xff : 0x00;
+    unsigned char taso1maski = ((color >> 1) & 1) ? 0xff : 0x00;
+    unsigned char taso2maski = ((color >> 2) & 1) ? 0xff : 0x00;
+    unsigned char taso3maski = ((color >> 3) & 1) ? 0xff : 0x00;
+
+    offset += y * STRIDE + (x >> 3);
+
+    p0 = taso0 + offset, p1 = taso1 + offset;
+    p2 = taso2 + offset, p3 = taso3 + offset;
+
+    for (i = 0; i < 16; ++i) {
+        c1 = *p++, c2 = *p++, c3 = 0;
+        /* 3 tavun bittisiirto */
+        SHIFT2(c2, c3, b);
+        SHIFT2(c1, c2, b);
+
+        RANGE_TASO0(p0);
+        *p0++ = (*p0 & ~c1) | (taso0maski & c1);
+        *p0++ = (*p0 & ~c2) | (taso0maski & c2);
+        *p0++ = (*p0 & ~c3) | (taso0maski & c3);
+        p0 += pstride;
+
+        *p1++ = (*p1 & ~c1) | (taso1maski & c1);
+        *p1++ = (*p1 & ~c2) | (taso1maski & c2);
+        *p1++ = (*p1 & ~c3) | (taso1maski & c3);
+        p1 += pstride;
+
+        *p2++ = (*p2 & ~c1) | (taso2maski & c1);
+        *p2++ = (*p2 & ~c2) | (taso2maski & c2);
+        *p2++ = (*p2 & ~c3) | (taso2maski & c3);
+        p2 += pstride;
+
+        *p3++ = (*p3 & ~c1) | (taso3maski & c1);
+        *p3++ = (*p3 & ~c2) | (taso3maski & c2);
+        *p3++ = (*p3 & ~c3) | (taso3maski & c3);
+        p3 += pstride;
+    }
+}
+
 void draw_16x80_wshift_blue(int offset, const unsigned char *p,
                         short x, short y) {
     unsigned char *p1, *p2, c1, c2, c3;
@@ -228,16 +333,16 @@ void draw_16x80_wshift_blue(int offset, const unsigned char *p,
 }
 
 const unsigned char *isot_maat[] = {
-    G_spata, G_shertta, G_sruutu, G_sristi
+    G_shertta, G_spata, G_sruutu, G_sristi
 };
 const unsigned char *isot_maat_U[] = {
-    G_spata_U, G_shertta_U, G_sruutu_U, G_sristi_U
+    G_shertta_U, G_spata_U, G_sruutu_U, G_sristi_U
 };
 const unsigned char *pienet_maat[] = {
-    G_ppata, G_phertta, G_pruutu, G_pristi
+    G_phertta, G_ppata, G_pruutu, G_pristi
 };
 const unsigned char *pienet_maat_U[] = {
-    G_ppata_U, G_phertta_U, G_pruutu_U, G_pristi_U
+    G_phertta_U, G_ppata_U, G_pruutu_U, G_pristi_U
 };
 const unsigned char *arvot[] = {
     G_arvoA, G_arvo2, G_arvo3, G_arvo4, G_arvo5, G_arvo6,
@@ -326,10 +431,10 @@ void piirra_kortti_corners(int offset, short a, short m) {
     const unsigned char *ua = arvot_U[a];
     unsigned char red = maa_red[m];
 
-    draw_16x16_wshift(offset, pa, 6, 10, red);
-    draw_16x16_wshift(offset, pm, 6, 28, red);
-    draw_16x16_wshift(offset, ua, 74, 102, red);
-    draw_16x16_wshift(offset, um, 74, 84, red);
+    draw_16x16_wshift_q(offset, pa, 6, 10, red);
+    draw_16x16_wshift_q(offset, pm, 6, 28, red);
+    draw_16x16_wshift_q(offset, ua, 74, 102, red);
+    draw_16x16_wshift_q(offset, um, 74, 84, red);
 }
 
 void piirra_kortti(short x, short y, kortti_t kortti) {
@@ -353,13 +458,27 @@ void piirra_kortti(short x, short y, kortti_t kortti) {
     }
 }
 
+void piirra_kortti_vynurkka(short x, short y, kortti_t kortti,
+                            unsigned char color) {
+    char m = KMAA(kortti), a = KARVO(kortti);
+    const unsigned char *pm = isot_maat[m];
+    const unsigned char *pa = arvot[a];
+    unsigned char red = maa_red[m];
+
+    COMPUTE_COORD(x, y, offset, bitoffset);
+    color = color ? color : (red ? 12 : 0);
+
+    draw_16x16_wshift(offset, pa, 6, 10, color);
+    draw_16x16_wshift(offset, pm, 6, 28, color);
+}
+
 void pyyhi_kortti(short x, short y) {
     x &= ~7;
     piirra_suorakulmio2(x, y, KORTTI_L, KORTTI_K, 0);
 }
 
 void card_move(short x1, short y1, short x2, short y2,
-                char a, char b, kortti_t c) {
+               char a, char b, kortti_t c) {
     char close_l, close_r, close_u, close_d;
     x1 &= ~7; x2 &= ~7;
     close_l = x1 > x2 && x1 - x2 < KORTTI_L;

@@ -4,7 +4,7 @@
 
 #include "VGA.H"
 
-struct valot {
+struct valot_pokeri {
     char valitse_1;
     char valitse_2;
     char valitse_3;
@@ -18,7 +18,25 @@ struct valot {
     char jako;
 };
 
-extern struct valot valot;
+struct valot_keno {
+    char valinta;
+    char pois[3];
+    char peru;
+    char tuplaus;
+    char tuplaus_pieni;
+    char tuplaus_suuri;
+    char panos;
+    char voitot;
+    char jako;
+};
+
+union valot_eli {
+    struct valot_pokeri pokeri;
+    struct valot_keno keno;
+};
+
+extern union valot_eli valot_eli;
+
 extern int valo_vilkku;
 extern int valo_vilkku_laskuri;
 #define VALO_VILKKU_PITUUS 32
