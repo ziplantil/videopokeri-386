@@ -149,14 +149,14 @@ static const char *tuplaus_onnittelut[] = {
     "MESTARITUPLAUS",
     "ONNEKAS ARVAUS",
     "KYLMÄT HERMOT",
-    "LUOVUTAN"
+    "LUOVUTAN!"
 };
 static const char *tuplaus_onnittelut_e[] = {
     "EXCELLENT",
     "NICELY DOUBLED",
     "WELL GUESSED",
     "NERVES OF STEEL",
-    "I GIVE UP"
+    "I GIVE UP!"
 };
 #define ONNITTELU_N (sizeof(tuplaus_onnittelut) / sizeof(tuplaus_onnittelut[0]))
 
@@ -1300,7 +1300,7 @@ void alusta_tila(enum Pelitila t) {
         paivita_alapalkki();
         ++tuplaus_ctr;
         /* toista_musiikki(MUSA_VOITTO, 96 + tuplaus_ctr * 24); */
-        toista_musiikki_oletus(MUSA_KOPUTUS);
+        toista_musiikki(MUSA_KOPUTUS, 144 + tuplaus_ctr * 20);
         musan_toisto = 0;
     } break;
     case T_TUPLAEI: {
@@ -1630,26 +1630,29 @@ static void aja_peli_internal(void) {
             toista_aani(AANI_VOITONMAKSU);
             paivita_alapalkki_voitto();
         } else if (voitto_disp == voitto && !musan_toisto) {
-            toista_musiikki(MUSA_VOITTO, 96 + tuplaus_ctr * 24);
+            toista_musiikki(MUSA_VOITTO, 100 + tuplaus_ctr * 20);
             musan_toisto = 1;
         }
         break;
     }
     case T_TUPLAOK: {
-        if (napit.voitot || voitto * 2 > paavoitto) {
-            kaikki_valot_pois();
-            paivita_palkki();
-            PYSAYTA_AANET();
-            alusta_tila(T_VSIIRTO);
-        }
+        unsigned dur = 180 - tuplaus_ctr * 6;
         if (napit.tuplaus && voitto * 2 <= paavoitto) {
             kaikki_valot_pois();
             paivita_palkki();
             PYSAYTA_AANET();
             alusta_tila(T_TUPLA1);
+            break;
         }
-        if (tila == T_TUPLAOK && !toistaa_aanta() && !musan_toisto) {
-            toista_musiikki(MUSA_VOITTO, 96 + tuplaus_ctr * 24);
+        if (napit.voitot || voitto * 2 > paavoitto) {
+            kaikki_valot_pois();
+            paivita_palkki();
+            PYSAYTA_AANET();
+            alusta_tila(T_VSIIRTO);
+            break;
+        }
+        if (ANIM_EQ(dur)) {
+            toista_musiikki(MUSA_VOITTO, 100 + tuplaus_ctr * 20);
             musan_toisto = 1;
         }
         break;

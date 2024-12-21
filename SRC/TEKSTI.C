@@ -23,7 +23,7 @@ unsigned char taso3maskibg = 0;
 
 static const unsigned char vfont_width[] = {
     14,14,14,14,14,14,14,14,14,14,
-    4,0,0,10,0,0,0,0,0,0,0,0,0,8,0,0,
+    4,4,0,10,0,0,0,0,0,0,0,0,0,8,0,0,
     7,3,7,7,6,7,7,6,7,7,0,0,0,0,0,0,
     13,8,9,8,9,7,7,6,8,3,7,7,6,8,7,7,
     7,7,7,8,8,8,9,8,9,9,9,8,0,6,0,0,
@@ -149,7 +149,7 @@ int measure_vfont(const unsigned char *t, int lihavoi) {
         case 'ö': c = '}'; break;
         default: break;
         }
-        if (c == '!') {
+        if (c == '_') {
             ++w;
             continue;
         }
@@ -171,7 +171,7 @@ void piirra_teksti(int x, int y, int vari,
         case 'ö': c = '}'; break;
         default: break;
         }
-        if (c == '!') {
+        if (c == '_') {
             ++x;
             continue;
         }

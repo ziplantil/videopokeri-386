@@ -372,8 +372,8 @@ struct aanitieto {
 
 static const struct aanitieto aanitiedot[] = {      
     { A_tyhja,    120 },                     /* - */
-    { A_Mvoitto,   96 },                     /* MUSA_VOITTO */
-    { A_Mtuplaus, 120 },                     /* MUSA_TUPLAUS */
+    { A_Mvoitto,  100 },                     /* MUSA_VOITTO */
+    { A_Mtuplaus, 150 },                     /* MUSA_TUPLAUS */
     { A_Mtsajaja,  48 },                     /* MUSA_PAAVOITTO */
     { A_Mkoputus, 144 },                     /* MUSA_KOPUTUS */
     { A_Mkonkka,   72 },                     /* MUSA_KONKKA */

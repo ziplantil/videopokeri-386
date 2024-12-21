@@ -597,7 +597,7 @@ void piirra_tuplaus_viesti(void) {
     tekstivali = otv;
 
     piirra_suorakulmio(128, 0, 64, 16, 15);
-    piirra_teksti(128, 2, 0, 1, "8!9!#JQK", 0);
+    piirra_teksti(128, 2, 0, 1, "8_9_#JQK", 0);
     
     if (english) {
         piirra_teksti(90, 2, 11, 1, "OR", 0);

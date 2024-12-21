@@ -15,7 +15,7 @@
 #include "VALOT.H"
 
 static const char *VERSION =
-    "VIDEOPOKERI-DOS 386 RISTIJÄTKÄ 2024 v2.0 2024-12-18";
+    "VIDEOPOKERI-DOS 386 RISTIJÄTKÄ 2024 v2.1 2024-12-21";
 
 int english = 0;
 int keno = 1;

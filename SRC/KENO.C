@@ -799,7 +799,7 @@ void keno_alusta_tila(enum PelitilaKeno t) {
         paivita_alapalkki();
         ++tuplaus_ctr;
         /* toista_musiikki(MUSA_VOITTO, 96 + tuplaus_ctr * 24); */
-        toista_musiikki_oletus(MUSA_KOPUTUS);
+        toista_musiikki(MUSA_KOPUTUS, 144 + tuplaus_ctr * 20);
         musan_toisto = 0;
     } break;
     case TK_TUPLAEI: {
@@ -1256,7 +1256,7 @@ static void keno_aja_peli_internal(void) {
             toista_aani(AANI_VOITONMAKSU);
             paivita_alapalkki_voitto();
         } else if (voitto_disp == voitto && !musan_toisto) {
-            toista_musiikki(MUSA_VOITTO, 96 + tuplaus_ctr * 24);
+            toista_musiikki(MUSA_VOITTO, 100 + tuplaus_ctr * 20);
             musan_toisto = 1;
         }
         break;
@@ -1308,13 +1308,7 @@ static void keno_aja_peli_internal(void) {
             paivita_tuplaus_alapalkki();
         break;
     case TK_TUPLAOK: {
-        if (napit.voitot || voitto * 2 > paavoitto) {
-            kaikki_valot_pois();
-            paivita_palkki();
-            PYSAYTA_AANET();
-            keno_alusta_tila(TK_VSIIRTO);
-            break;
-        }
+        unsigned dur = 180 - tuplaus_ctr * 6;
         if (napit.tuplaus && voitto * 2 <= paavoitto) {
             kaikki_valot_pois();
             paivita_palkki();
@@ -1322,8 +1316,15 @@ static void keno_aja_peli_internal(void) {
             keno_alusta_tila(TK_TUPLA1);
             break;
         }
-        if (!toistaa_aanta() && !musan_toisto) {
-            toista_musiikki(MUSA_VOITTO, 96 + tuplaus_ctr * 24);
+        if (napit.voitot || voitto * 2 > paavoitto) {
+            kaikki_valot_pois();
+            paivita_palkki();
+            PYSAYTA_AANET();
+            keno_alusta_tila(TK_VSIIRTO);
+            break;
+        }
+        if (ANIM_EQ(dur)) {
+            toista_musiikki(MUSA_VOITTO, 100 + tuplaus_ctr * 20);
             musan_toisto = 1;
         }
         break;

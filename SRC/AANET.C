@@ -482,7 +482,7 @@ const unsigned short A_Mkoputus0[] = {
     PAALLE( 75, NA_(0)), POIS( 60),
     PAALLE(285, NG_(0)), POIS( 60),
     PAALLE( 75, NA_(0)), POIS( 60),
-    LOPPU(285)
+    ALKUUN(285)
 };
 AANI_KANAVIA_1(A_Mkoputus);
 
