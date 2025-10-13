@@ -15,7 +15,7 @@
 #include "VALOT.H"
 
 static const char *VERSION =
-    "VIDEOPOKERI-DOS 386 RISTIJÄTKÄ 2024 v2.1 2024-12-21";
+    "VIDEOPOKERI-DOS 386 RISTIJÄTKÄ 2024 v2.2 2025-10-13";
 
 int english = 0;
 int keno = 1;
@@ -481,9 +481,9 @@ static unsigned long estimate_free_space(unsigned long s) {
 
 static void intro(void) {
     puts("\n"
-         "======================================\n"
-         " VIDEOPOKERI-DOS -by- RISTIJÄTKÄ 2024 \n"
-         "======================================\n");
+         "===========================================\n"
+         " VIDEOPOKERI-DOS -by- RISTIJÄTKÄ 2024-2025 \n"
+         "===========================================\n");
 }
 
 static void clearstdin(void) {
@@ -492,6 +492,11 @@ static void clearstdin(void) {
         c = getchar();
     } while (c != '\n' && c != EOF);
 }
+
+const char *NIMIMERKIT =
+    "KJL  JOLA  OH  KK  MZ  ES\n"
+    "RM  PJP  KP  SL  TT  LM\n"
+    "EL  JT  ML  TP";
 
 int main(int argc, char *argv[]) {
     int n = 0, tila, saldo, aani_ok;

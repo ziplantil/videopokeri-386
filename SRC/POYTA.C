@@ -108,8 +108,8 @@ int arvioi_voitto_kasi(void) {
         }
         for (i = 0; i < ARVOT_N; ++i) {
             if (arvot[i]) {
-                if (i == 0 && arvo_max == ARVOT_N - 1) {
-                    // ässät: korota arvo_maxia (10-J-Q-k-A)
+                if (i == 0 && arvo_max >= ARVOT_N - (jokeri ? 2 : 1)) {
+                    // ässät: korota arvo_maxia (10-J-Q-K-A)
                     arvo_max = ARVOT_N;
                 } else {
                     arvo_min = i;
