@@ -6,7 +6,8 @@
 
 enum Pelitila {
     /* odottaa että pelaaja tekee jotain */
-    T_PANOS,    /* aivan alussa */
+    T_RAHAA,    /* pelaaja lisännyt rahaa */
+    T_PANOS,    /* pelaaja valitsee panoksen */
     T_VALITSE,  /* pelaaja valitsee kortit */
     T_VOITTO,   /* käsi jolla voitti, uutta panosta tai tuplaus */
     T_TUPLAUS,  /* pieni vai iso? */
@@ -18,6 +19,7 @@ enum Pelitila {
     T_JAKO2,    /* pakan sekoitus */
     T_JAKO3,    /* pakka jakaa kortit */
 
+    T_UJAKO0,   /* odota ennen pudotusta */
     T_UJAKO1,   /* valitsemattomat pudotetaan */
     T_UJAKO2,   /* uudet kortit jaetaan */
     T_UJAKO3,   /* tinnitys jäävistyy */
@@ -29,6 +31,7 @@ enum Pelitila {
     T_TUPLA4,   /* kortin jako */
 
     T_VSIIRTO,  /* voiton siirto */
+    T_VLOPPU,   /* päävoiton jälkeen */
     T_KONKKA,   /* rahat loppu */
 
     /* esittelytilat */

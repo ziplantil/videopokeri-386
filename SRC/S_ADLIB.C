@@ -21,16 +21,12 @@ static const int instruments_cnt;
 
 static void opl2_addr_wait_(void) {
     /* 6 */
-    /* TODO. is this still too fast on some machines? what if the bus is
-       faster than 8 MHz? */
     ADLIB_READ(); ADLIB_READ(); ADLIB_READ();
     ADLIB_READ(); ADLIB_READ(); ADLIB_READ();
 }
 
 static void opl2_data_wait_(void) {
     /* 35 */
-    /* TODO. is this still too fast on some machines? what if the bus is
-       faster than 8 MHz? */
     ADLIB_READ(); ADLIB_READ(); ADLIB_READ(); ADLIB_READ(); ADLIB_READ();
     ADLIB_READ(); ADLIB_READ(); ADLIB_READ(); ADLIB_READ(); ADLIB_READ();
     ADLIB_READ(); ADLIB_READ(); ADLIB_READ(); ADLIB_READ(); ADLIB_READ();

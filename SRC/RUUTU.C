@@ -80,6 +80,13 @@ static const unsigned char custom_palette4[] = {
     RGB(255,  0,  0), RGB(255,  0,127), RGB(255,127,  0), RGB(255,127,127)
 };
 
+static const unsigned char custom_palette5[] = {
+    RGB(  0,  0,  0), RGB(  0,  0, 96), RGB(  0,128,  0), RGB(  0,128, 64),
+    RGB( 80,  0,  0), RGB( 80,  0, 80), RGB( 64, 96,  0), RGB( 96,192, 96),
+    RGB( 64,128, 64), RGB(  0,  0,127), RGB(  0,255,  0), RGB(  0,255,127),
+    RGB(127,  0,  0), RGB(127,  0,127), RGB(127,255,  0), RGB(127,255,127)
+};
+
 struct arena {
     unsigned char **ptr;
     unsigned int size;
@@ -172,6 +179,10 @@ void vaihda_keltaiseen_palettiin(void) {
 
 void vaihda_punaiseen_palettiin(void) {
     vaihda_palettia(custom_palette4);
+}
+
+void vaihda_vihreaan_palettiin(void) {
+    vaihda_palettia(custom_palette5);
 }
 
 short ruudun_vaihto(short tila, char oikeesti) {
@@ -640,7 +651,7 @@ void piirra_ylapalkki_tausta(void) {
     }
 
     if (english) {
-        piirra_teksti(280, 11, 1, 0, "BET", 0);
+        piirra_teksti(280, 11, 1, 0, "STAKE", 0);
     } else {
         piirra_teksti(280, 11, 1, 0, "PANOS", 0);
     }

@@ -15,7 +15,7 @@
 #include "VALOT.H"
 
 static const char *VERSION =
-    "VIDEOPOKERI-DOS 386 RISTIJÄTKÄ 2024 v2.2 2025-10-13";
+    "VIDEOPOKERI-DOS 386 RISTIJÄTKÄ 2021-2025 v2.3 2025-10-30";
 
 int english = 0;
 int keno = 1;
@@ -238,6 +238,8 @@ static int lue_asetus(const char *nimi, const char *arvo) {
             configured_skip = -1;
         } else {
             asetus_strtoul(arvo, &configured_skip);
+            if (configured_skip > 3 && configured_skip <= 7)
+                configured_skip = 3;
             if (configured_skip < 0 || configured_skip > 7) {
                 if (english) {
                     printf("Config error: invalid skip setting: '%d'\n",
@@ -482,7 +484,7 @@ static unsigned long estimate_free_space(unsigned long s) {
 static void intro(void) {
     puts("\n"
          "===========================================\n"
-         " VIDEOPOKERI-DOS -by- RISTIJÄTKÄ 2024-2025 \n"
+         " VIDEOPOKERI-DOS -by- RISTIJÄTKÄ 2021-2025 \n"
          "===========================================\n");
 }
 

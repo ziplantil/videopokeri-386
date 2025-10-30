@@ -117,6 +117,7 @@ void vaihda_normaaliin_palettiin(void);
 void vaihda_liilaan_palettiin(void);
 void vaihda_keltaiseen_palettiin(void);
 void vaihda_punaiseen_palettiin(void);
+void vaihda_vihreaan_palettiin(void);
 
 // vaihtaa ruudun näyttötilaa, palauttaa vanhan tilan
 short ruudun_vaihto(short tila, char oikeesti);

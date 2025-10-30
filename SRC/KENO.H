@@ -34,6 +34,7 @@ enum PelitilaKeno {
     TK_TUPLA4,   /* panos tuplataan */
 
     TK_VSIIRTO,  /* voiton siirto */
+    TK_VLOPPU,   /* päävoiton jälkeen */
     TK_KONKKA,   /* rahat loppu */
 
     /* esittelytilat */

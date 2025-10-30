@@ -1120,6 +1120,23 @@ void lisaa_panos(unsigned panos) {
 
 void alusta_tila(enum Pelitila t) {
     switch (t) {
+    case T_RAHAA: {
+        int i;
+        valmistele_ruutu_peli();
+        pelikortit[0].nakyva = 1;
+        pelikortit[0].selka = 1;
+        pelikortit[0].x = PAKKA_X;
+        pelikortit[0].y = PAKKA_Y;
+        for (i = 1; i <= 5; ++i) {
+            pelikortit[i].nakyva = 0;
+        }
+        paivita_kaikki_kortit();
+        kaikki_valot_pois();
+        VALO_VILKKU_ALUSTA();
+        paivita_palkki();
+        piilota_kadet();
+        inactive = 0;
+    } break;
     case T_PANOS: {
         kaikki_valot_pois();
         VALO_VILKKU(valot.panos, 1);
@@ -1194,20 +1211,24 @@ void alusta_tila(enum Pelitila t) {
         yks_kerrallaan = 0;
         piirra_kadet(0);
     } break;
+    case T_UJAKO0: {
+        kaikki_valot_pois();
+        paivita_palkki();
+        tuplaus = 0;
+        paivita_kaikki_kortit();
+        yks_kerrallaan = 1;
+    } break;
     case T_UJAKO1: {
         int i;
-        kaikki_valot_pois();
         paivita_palkki();
         pudotettavat = 0;
         jaa_i = 1, jaa_ctr = 0;
-        tuplaus = 0;
         for (i = 0; i < 5; ++i) {
             pudotettavat |= (~valinnat[i] & 1) << i;
             if (!valinnat[i])
                 pelikortit[i + 1].selka = 1;
         }
         paivita_kaikki_kortit();
-        yks_kerrallaan = 1;
         if (!pudotettavat) {
             fast_memset(valinnat, 0, sizeof(valinnat));
             arvioi_kasi();
@@ -1241,6 +1262,7 @@ void alusta_tila(enum Pelitila t) {
         voitto_kasi = -1;
         pelikortit[0].x = PAKKA_X;
         pelikortit[0].y = PAKKA_Y;
+        voitto_disp = voitto;
         piilota_kadet();
         paivita_kaikki_kortit();
         paivita_alapalkki();
@@ -1346,7 +1368,7 @@ void alusta_tila(enum Pelitila t) {
         piirra_teksti_oikea(GAREA_WIDTH - 16, GAREA_HEIGHT - 32,
             15, 1, "ORIGINAL 1986 RAY", 0);
         piirra_teksti_oikea(GAREA_WIDTH - 16, GAREA_HEIGHT - 16,
-            15, 1, "DOS 2024 RISTIJÄTKÄ", 0);
+            15, 1, "DOS 2021-2025 RISTIJÄTKÄ", 0);
         for (y = 0; y < 12; ++y) {
             for (x = 0; x < 36;) {
                 unsigned char c = *p++;
@@ -1364,6 +1386,8 @@ void alusta_tila(enum Pelitila t) {
     case T_ESIT1: {
         char i;
         valmistele_ruutu_esittely();
+        kaikki_valot_pois();
+        piirra_palkki_napit();
         demo_y = 0;
         inactive = 1 + (rand() % 4);
         for (i = 1; i <= 5; ++i) {
@@ -1426,6 +1450,10 @@ void alusta_tila(enum Pelitila t) {
 
 static void aja_peli_internal(void) {
     switch (tila) {
+    case T_RAHAA:
+        if (anim >= 8)
+            alusta_tila(T_PANOS);
+        break;
     case T_PANOS: {
         if (napit_kaikki.mika_tahansa)
             inactive = 0;
@@ -1532,8 +1560,11 @@ static void aja_peli_internal(void) {
             paivita_palkki();
             piilota_kadet();
             paivita_alapalkki();
-            alusta_tila(T_UJAKO1);
+            alusta_tila(T_UJAKO0);
         }
+        break;
+    case T_UJAKO0: /* odota ennen korttien pudotusta */
+        if (anim >= 10) alusta_tila(T_UJAKO1);
         break;
     case T_UJAKO1: /* pudota kortit */
         pudota_kortit();
@@ -1659,11 +1690,11 @@ static void aja_peli_internal(void) {
     }
     case T_VSIIRTO: {
         if (oli_paavoitto && anim % 8 <= tickskip) {
-            if (palswap)
-                vaihda_normaaliin_palettiin();
-            else
-                vaihda_liilaan_palettiin();
-            palswap ^= 1;
+            switch (palswap) {
+            case 0: vaihda_liilaan_palettiin(); break;
+            case 1: vaihda_vihreaan_palettiin(); break;
+            }
+            palswap = (palswap + 1) & 1;
         }
         if (anim % voitto_hitaus > tickskip) return;
         if (!voitto) {
@@ -1673,16 +1704,15 @@ static void aja_peli_internal(void) {
                 piirra_suorakulmio(160, 144, 480, 16, 0);
                 paivita_alue(160, 144, 480, 16);
                 palswap = 0;
-                vaihda_normaaliin_palettiin();
+                vaihda_liilaan_palettiin();
                 paivita_kaikki_kortit();
                 toista_musiikki_oletus(MUSA_PAAVOITTO);
             }
-            oli_paavoitto = 0;
             paivita_ylapalkki();
             paivita_alapalkki();
             voitto_kasi = -1;
-            piirra_kadet(0);
-            alusta_tila(T_PANOS);
+            alusta_tila(oli_paavoitto ? T_VLOPPU : T_PANOS);
+            oli_paavoitto = 0;
         } else {
             short kasvatus = laske_kohti(voitot, voitot + voitto);
             voitot += kasvatus;
@@ -1694,12 +1724,20 @@ static void aja_peli_internal(void) {
         }
         break;
     }
+    case T_VLOPPU: {
+        if (anim >= 8) {
+            piirra_kadet(0);
+            vaihda_normaaliin_palettiin();
+            alusta_tila(T_PANOS);
+        }
+        break;
+    }
     case T_KONKKA:
         if (anim >= 300 && !lisarahat_ok)
             lopeta();
         else if (pelit > 0) {
             vaihda_normaaliin_palettiin();
-            alusta_tila(T_PANOS);
+            alusta_tila(T_RAHAA);
         }
         break;
     case T_ESIT0: {

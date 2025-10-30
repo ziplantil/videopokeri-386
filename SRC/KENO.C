@@ -587,6 +587,7 @@ void keno_alusta_tila(enum PelitilaKeno t) {
         VALO_VILKKU(valot.valinta, 1);
         VALO_VILKKU(valot.panos, 1);
         siirto_kortit = 0;
+        valintoja = 0;
         valmistele_ruutu_peli();
         piirra_selka(PAKKA_X, PAKKA_Y);
         piirra_keno_kertoimet(0);
@@ -742,17 +743,26 @@ void keno_alusta_tila(enum PelitilaKeno t) {
         kaikki_valot_pois();
         VALO_PAALLE(valot.peru);
         paivita_alapalkki();
-        valintoja = 0;
         pakka_x = PAKKA_X;
         pyyhi_kortti(PAKKA_X, PAKKA_Y);
         piirra_selka(PAKKA_X, PAKKA_Y);
         sailyta_kuva(PAKKA_X, PAKKA_Y, KORTTI_L, KORTTI_K, kortti_cache);
     } break;
     case TK_PERU2: {
+        int j;
+        for (j = 0; j < valintoja; ++j) {
+            kortit_x[j] = alut_x[valintoja] + valit_x[valintoja] * j;
+            pyyhi_kortti(PAKKA_X, PAKKA_Y);
+            piirra_kortti(PAKKA_X, PAKKA_Y, valitut_kortit[j]);
+            sailyta_kuva(PAKKA_X, PAKKA_Y, KORTTI_L, KORTTI_K, kortti_caches[j]);
+        }
+        pyyhi_kortti(PAKKA_X, PAKKA_Y);
+        siirto_kortit = 0;
     } break;
     case TK_TUPLA1: {
         kaikki_valot_pois();
         VALO_PAALLE(valot.tuplaus);
+        voitto_disp = voitto;
         paivita_alapalkki();
         piirra_selka(PAKKA_X, PAKKA_Y);
         sailyta_kuva(PAKKA_X, PAKKA_Y,
@@ -847,6 +857,8 @@ void keno_alusta_tila(enum PelitilaKeno t) {
         const unsigned char *p = logokartta;
         valmistele_ruutu_esittely();
         alapalkki_fade = 0;
+        kaikki_valot_pois();
+        piirra_palkki_napit();
         for (i = 0; i < 25; ++i) {
             piirra_selka((rand() % (GAREA_WIDTH - KORTTI_L - 64) + 32) & ~7,
                         (rand() % (GAREA_HEIGHT - KORTTI_K - 64) + 32) & ~7);
@@ -856,7 +868,7 @@ void keno_alusta_tila(enum PelitilaKeno t) {
         piirra_teksti_oikea(GAREA_WIDTH - 16, GAREA_HEIGHT - 32,
             15, 1, "ORIGINAL 1986 RAY", 0);
         piirra_teksti_oikea(GAREA_WIDTH - 16, GAREA_HEIGHT - 16,
-            15, 1, "DOS 2024 RISTIJÄTKÄ", 0);
+            15, 1, "DOS 2021-2025 RISTIJÄTKÄ", 0);
         for (y = 0; y < 12; ++y) {
             for (x = 0; x < 36;) {
                 unsigned char c = *p++;
@@ -943,82 +955,176 @@ static void piirra_keno_osuma(short x, short y) {
     }
 }
 
+static void keno_aja_peli_valinta(void) {
+    char ox = valinta_x, oy = valinta_y;
+    if (napit_kaikki.mika_tahansa)
+        inactive = 0;
+    else
+        inactive += SPEED_MUL(1);
+    if (napit.panos) {
+        panos = (panos % maksimipanos) + 1;
+        if (panos > pelit + voitot)
+            panos = 1;
+        toista_aani(AANI_PANOS1 + ((panos - 1) % 5));
+        paivita_ylapalkki();
+        piirra_keno_kertoimet(0);
+    }
+    if (voitot && napit.voitot) 
+        keno_lopeta();
+    if (napit.valinta)
+        keno_valitse_kortti();
+    if (oy > 0 && napit.ylos)
+        --oy;
+    if (oy < 3 && napit.alas)
+        ++oy;
+    if (ox > 0 && napit.vasen)
+        --ox;
+    if (ox < ARVOT_N - 1 && napit.oikea)
+        ++ox;
+    if (valinta_x != ox || valinta_y != oy) {
+        piirra_kortti_vynurkka(VALINTA_XY, VALINTA_KORTTI, 0);
+        paivita_alue(VALINTA_XY, VALINTA_KW, VALINTA_KH);
+        valinta_x = ox, valinta_y = oy;
+        toista_aani(AANI_KORTTI_KAANTYY);
+        valinta_vilkku_anim = anim & 31;
+        valinta_vilkku = 0;
+    }
+    if ((anim & 31) == valinta_vilkku_anim) {
+        valinta_vilkku = !valinta_vilkku;
+        piirra_kortti_vynurkka(VALINTA_XY, VALINTA_KORTTI,
+                                valinta_vilkku ? 14 : 0);
+        paivita_alue(VALINTA_XY, VALINTA_KW, VALINTA_KH);
+    }
+    if (inactive >= 3600) {
+        kaikki_valot_pois();
+        valot_efekti();
+        piirra_palkki_napit();
+        keno_alusta_tila(TK_ESIT);
+    }
+    if (valintoja && pelit + voitot >= panos && napit.jako) {
+        piirra_kortti_vynurkka(VALINTA_XY, VALINTA_KORTTI, 0);
+        kaikki_valot_pois();
+        VALO_PAALLE(valot.jako);
+        paivita_palkki();
+        if (pelit <= panos) {
+            voitot -= panos - pelit;
+            pelit = 0;
+        } else
+            pelit -= panos;
+        paivita_ylapalkki();
+        paivita_alapalkki();
+        keno_alusta_tila(TK_SIIRTO1);
+    } else if (valintoja && napit.peru) {
+        int i;
+        for (i = 0; i < valintoja; ++i) {
+            valinta_x = KARVO(valitut_kortit[i]);
+            valinta_y = KMAA(valitut_kortit[i]);
+            keno_valinta_pois_kortista(VALINTA_XY, valinta_x == ARVOT_N - 1,
+                                    valinta_y == 3);
+        }
+        valintoja = 0;
+        VALO_POIS(valot.jako);
+        VALO_POIS(valot.peru);
+        toista_aani(AANI_VALINTA);
+        piirra_keno_kertoimet(0);
+        piirra_palkki_napit();
+    }
+}
+
+static void keno_aja_peli_jako4(void) {
+    int i, a;
+    short x = pakka_x;
+    for (i = 0; i <= tickskip; ++i) {
+        a = koputus_anim >> 1;
+        ufrac += (a * a + (anim >= 160 ? (anim - 160) << 11 : 1)) >> 1;
+        pakka_x += ufrac >> 12;
+        ufrac &= 0xFFF;
+        ++koputus_anim;
+    }
+    if (pakka_x > PAKKA_X)
+        pakka_x = PAKKA_X;
+    if (pakka_x != x) {
+        short x0 = VALINTA_X + (JAKO_KORTTEJA - 1) * JAKO_L;
+        short dx = pakka_x - x;
+        short kx = x0 + KORTTI_L;
+        short xb, x3;
+        if (tickskip < 2) {
+            xb = x, x3 = pakka_x;
+            piirra_suorakulmio(xb, PAKKA_Y, dx, KORTTI_K, 0);
+        } else {
+            xb = x & ~7, x3 = pakka_x & ~7;
+            piirra_suorakulmio(xb, PAKKA_Y, dx + 8, KORTTI_K, 0);
+        }
+        if (x <= x0 + KORTTI_L) 
+            piirra_kuva(x0, PAKKA_Y, KORTTI_L, KORTTI_K, kortti_cache);
+        if (tickskip < 2) {
+            piirra_kuva_suikale(x3, PAKKA_Y, KORTTI_L, KORTTI_K,
+                                0, 0, KORTTI_L, KORTTI_K,
+                                kortti_cache1, pakka_x < kx);
+        } else {
+            piirra_selka(x3, PAKKA_Y);
+        }
+        paivita_alue(xb, PAKKA_Y, KORTTI_L + dx + 8, KORTTI_K);
+        if (pakka_x == PAKKA_X) {
+            ufrac = 0;
+            for (a = 0; a < valintoja; ++a) {
+                if (osumakortit[a]) {
+                    short lx = alut_x[valintoja] + a * valit_x[valintoja]
+                                            + (KORTTI_L - OSUMA_L) / 2;
+                    short ly = VALINTA_Y + (KORTTI_K - OSUMA_K) / 2;
+                    piirra_keno_osuma(lx, ly);
+                    paivita_alue(lx, ly, OSUMA_L, OSUMA_K);
+                }
+            }
+
+            pyyhi_kortti(PAKKA_X, PAKKA_Y);
+            piirra_selka(PAKKA_X, PAKKA_Y);
+            paivita_alue(PAKKA_X, PAKKA_Y, KORTTI_L, KORTTI_K);
+            if (osumat && keno_kertoimet[valintoja - osumat]) {
+                voitto = panos * keno_kertoimet[valintoja - osumat];
+                if (voitto > paavoitto) voitto = paavoitto;
+                update_voitto_hitaus(voitto, 0);
+                keno_alusta_tila(TK_VOITTO);
+            } else {
+                toista_aani(AANI_KENO_HAVITTY);
+                keno_alusta_tila(TK_JAKO5);
+            }
+        }
+    }
+}
+
+static void keno_aja_peli_peru2(void) {
+    if (siirto_kortit < valintoja) {
+        short x0 = kortit_x[siirto_kortit];
+        short x1 = x0 - SPEED_MUL(24);
+        pyyhi_kortti(x0, VALINTA_Y);
+        kortit_x[siirto_kortit] = x1;
+        if (siirto_kortit + 1 < valintoja
+                    && x0 + KORTTI_L >= kortit_x[siirto_kortit + 1])
+            piirra_kuva(kortit_x[siirto_kortit + 1], VALINTA_Y,
+                        KORTTI_L, KORTTI_K, kortti_caches[siirto_kortit + 1]);
+        if (x1 >= -KORTTI_L) {
+            short x2 = MAX(0, x1);
+            short x3 = MAX(0, x0 + KORTTI_L);
+            piirra_kuva_rajaa(x2, VALINTA_Y, KORTTI_L + x1 - x2, KORTTI_K,
+                        x2 - x1, 0, KORTTI_L, KORTTI_K,
+                        kortti_caches[siirto_kortit]);
+            paivita_alue(x2, VALINTA_Y, MAX(0, x3) - x2, KORTTI_K);
+        } else {
+            pyyhi_kortti(0, VALINTA_Y);
+            paivita_alue(0, VALINTA_Y, KORTTI_L, KORTTI_K);
+            ++siirto_kortit;
+        }
+    } else {
+        valintoja = 0;
+        keno_alusta_tila(TK_SIIRTO0A);
+    }
+}
+
 static void keno_aja_peli_internal(void) {
     switch (kenotila) {
     case TK_VALINTA: {
-        char ox = valinta_x, oy = valinta_y;
-        if (napit_kaikki.mika_tahansa)
-            inactive = 0;
-        else
-            inactive += SPEED_MUL(1);
-        if (napit.panos) {
-            panos = (panos % maksimipanos) + 1;
-            if (panos > pelit + voitot)
-                panos = 1;
-            toista_aani(AANI_PANOS1 + ((panos - 1) % 5));
-            paivita_ylapalkki();
-            piirra_keno_kertoimet(0);
-        }
-        if (voitot && napit.voitot) 
-            keno_lopeta();
-        if (napit.valinta)
-            keno_valitse_kortti();
-        if (oy > 0 && napit.ylos)
-            --oy;
-        if (oy < 3 && napit.alas)
-            ++oy;
-        if (ox > 0 && napit.vasen)
-            --ox;
-        if (ox < ARVOT_N - 1 && napit.oikea)
-            ++ox;
-        if (valinta_x != ox || valinta_y != oy) {
-            piirra_kortti_vynurkka(VALINTA_XY, VALINTA_KORTTI, 0);
-            paivita_alue(VALINTA_XY, VALINTA_KW, VALINTA_KH);
-            valinta_x = ox, valinta_y = oy;
-            toista_aani(AANI_KORTTI_KAANTYY);
-            valinta_vilkku_anim = anim & 31;
-            valinta_vilkku = 0;
-        }
-        if ((anim & 31) == valinta_vilkku_anim) {
-            valinta_vilkku = !valinta_vilkku;
-            piirra_kortti_vynurkka(VALINTA_XY, VALINTA_KORTTI,
-                                   valinta_vilkku ? 14 : 0);
-            paivita_alue(VALINTA_XY, VALINTA_KW, VALINTA_KH);
-        }
-        if (inactive >= 3600) {
-            kaikki_valot_pois();
-            valot_efekti();
-            piirra_palkki_napit();
-            keno_alusta_tila(TK_ESIT);
-        }
-        if (valintoja && pelit + voitot >= panos && napit.jako) {
-            piirra_kortti_vynurkka(VALINTA_XY, VALINTA_KORTTI, 0);
-            kaikki_valot_pois();
-            VALO_PAALLE(valot.jako);
-            paivita_palkki();
-            if (pelit <= panos) {
-                voitot -= panos - pelit;
-                pelit = 0;
-            } else
-                pelit -= panos;
-            paivita_ylapalkki();
-            paivita_alapalkki();
-            keno_alusta_tila(TK_SIIRTO1);
-        } else if (valintoja && napit.peru) {
-            int i;
-            for (i = 0; i < valintoja; ++i) {
-                valinta_x = KARVO(valitut_kortit[i]);
-                valinta_y = KMAA(valitut_kortit[i]);
-                keno_valinta_pois_kortista(VALINTA_XY, valinta_x == ARVOT_N - 1,
-                                        valinta_y == 3);
-            }
-            valintoja = 0;
-            VALO_POIS(valot.jako);
-            VALO_POIS(valot.peru);
-            toista_aani(AANI_VALINTA);
-            piirra_keno_kertoimet(0);
-            piirra_palkki_napit();
-        }
+        keno_aja_peli_valinta();
         break;
     }
     case TK_PANOS: {
@@ -1166,62 +1272,7 @@ static void keno_aja_peli_internal(void) {
             keno_alusta_tila(TK_JAKO4);
         break;
     case TK_JAKO4: { /* tinnitys jäävistyy */
-        int i, a;
-        short x = pakka_x;
-        for (i = 0; i <= tickskip; ++i) {
-            a = koputus_anim >> 1;
-            ufrac += (a * a + (anim >= 160 ? (anim - 160) << 11 : 1)) >> 1;
-            pakka_x += ufrac >> 12;
-            ufrac &= 0xFFF;
-            ++koputus_anim;
-        }
-        if (pakka_x > PAKKA_X)
-            pakka_x = PAKKA_X;
-        if (pakka_x != x) {
-            short x0 = VALINTA_X + (JAKO_KORTTEJA - 1) * JAKO_L;
-            short dx = pakka_x - x;
-            short kx = x0 + KORTTI_L;
-            short xb, x3;
-            if (tickskip < 2) {
-                xb = x, x3 = pakka_x;
-                piirra_suorakulmio(xb, PAKKA_Y, dx, KORTTI_K, 0);
-            } else {
-                xb = x & ~7, x3 = pakka_x & ~7;
-                piirra_suorakulmio(xb, PAKKA_Y, dx + 8, KORTTI_K, 0);
-            }
-            if (x <= x0 + KORTTI_L) 
-                piirra_kuva(x0, PAKKA_Y, KORTTI_L, KORTTI_K, kortti_cache);
-            if (tickskip < 2) {
-                piirra_kuva_suikale(x3, PAKKA_Y, KORTTI_L, KORTTI_K,
-                                    0, 0, KORTTI_L, KORTTI_K,
-                                    kortti_cache1, pakka_x < kx);
-            } else {
-                piirra_selka(x3, PAKKA_Y);
-            }
-            paivita_alue(xb, PAKKA_Y, KORTTI_L + dx + 8, KORTTI_K);
-            if (pakka_x == PAKKA_X) {
-                ufrac = 0;
-                for (a = 0; a < valintoja; ++a) {
-                    if (osumakortit[a]) {
-                        short lx = alut_x[valintoja] + a * valit_x[valintoja]
-                                             + (KORTTI_L - OSUMA_L) / 2;
-                        short ly = VALINTA_Y + (KORTTI_K - OSUMA_K) / 2;
-                        piirra_keno_osuma(lx, ly);
-                        paivita_alue(lx, ly, OSUMA_L, OSUMA_K);
-                    }
-                }
-
-                if (osumat && keno_kertoimet[valintoja - osumat]) {
-                    voitto = panos * keno_kertoimet[valintoja - osumat];
-                    if (voitto > paavoitto) voitto = paavoitto;
-                    update_voitto_hitaus(voitto, 0);
-                    keno_alusta_tila(TK_VOITTO);
-                } else {
-                    toista_aani(AANI_KENO_HAVITTY);
-                    keno_alusta_tila(TK_JAKO5);
-                }
-            }
-        }
+        keno_aja_peli_jako4();
         break;
     }
     case TK_JAKO5: {
@@ -1349,17 +1400,16 @@ static void keno_aja_peli_internal(void) {
         break;
     }
     case TK_PERU2: {
-        // TODO.
-        keno_alusta_tila(TK_SIIRTO0A);
+        keno_aja_peli_peru2();
         break;
     }
     case TK_VSIIRTO: {
         if (oli_paavoitto && anim % 8 <= tickskip) {
-            if (palswap)
-                vaihda_normaaliin_palettiin();
-            else
-                vaihda_liilaan_palettiin();
-            palswap ^= 1;
+            switch (palswap) {
+            case 0: vaihda_liilaan_palettiin(); break;
+            case 1: vaihda_vihreaan_palettiin(); break;
+            }
+            palswap = (palswap + 1) & 1;
         }
         if (anim % voitto_hitaus > tickskip) return;
         if (!voitto) {
@@ -1367,16 +1417,15 @@ static void keno_aja_peli_internal(void) {
                 alapalkki_fade = 9;
             if (oli_paavoitto) {
                 palswap = 0;
-                vaihda_normaaliin_palettiin();
+                vaihda_liilaan_palettiin();
                 toista_musiikki_oletus(MUSA_PAAVOITTO);
             }
-            oli_paavoitto = 0;
             paivita_ylapalkki();
             paivita_alapalkki();
             voitto_kasi = -1;
             osumat = 0;
-            piirra_keno_kertoimet(0);
-            keno_alusta_tila(TK_PANOS);
+            keno_alusta_tila(oli_paavoitto ? TK_VLOPPU : TK_PANOS);
+            oli_paavoitto = 0;
         } else {
             short kasvatus = laske_kohti(voitot, voitot + voitto);
             voitot += kasvatus;
@@ -1385,6 +1434,14 @@ static void keno_aja_peli_internal(void) {
             toista_aani(AANI_VOITONMAKSU);
             paivita_ylapalkki_voitot();
             paivita_alapalkki_voitto();
+        }
+        break;
+    }
+    case TK_VLOPPU: {
+        if (anim >= 10) {
+            piirra_keno_kertoimet(0);
+            vaihda_normaaliin_palettiin();
+            keno_alusta_tila(TK_PANOS);
         }
         break;
     }
